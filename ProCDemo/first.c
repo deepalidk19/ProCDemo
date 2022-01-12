@@ -130,7 +130,7 @@ static const int IAPFTL  = 535;
 extern void sqliem(unsigned char *, signed int *);
 
  static const char *sq0003 = 
-"select ENAME  from EMP where JOB like 'SALES%'           ";
+"select ENAME ,SAL ,COMM  from EMP where JOB like 'SALES%'           ";
 
 typedef struct { unsigned short len; unsigned char arr[1]; } VARCHAR;
 typedef struct { unsigned short len; unsigned char arr[1]; } varchar;
@@ -140,10 +140,10 @@ static const short sqlcud0[] =
 {13,4130,178,0,0,
 5,0,0,1,0,0,32,48,0,0,0,0,0,1,0,
 20,0,0,0,0,0,27,61,0,0,4,4,0,1,0,1,97,0,0,1,97,0,0,1,10,0,0,1,10,0,0,
-51,0,0,3,57,0,9,83,0,0,0,0,0,1,0,
-66,0,0,3,0,0,13,102,0,0,1,0,0,1,0,2,97,0,0,
-85,0,0,3,0,0,15,113,0,0,0,0,0,1,0,
-100,0,0,4,0,0,30,117,0,0,0,0,0,1,0,
+51,0,0,3,68,0,9,84,0,0,0,0,0,1,0,
+66,0,0,3,0,0,13,103,0,0,3,0,0,1,0,2,97,0,0,2,4,0,0,2,4,0,0,
+93,0,0,3,0,0,15,114,0,0,0,0,0,1,0,
+108,0,0,4,0,0,30,118,0,0,0,0,0,1,0,
 };
 
 
@@ -264,23 +264,22 @@ SQLCA_STORAGE_CLASS struct sqlca sqlca
 #define MAX_USERNAME     31
 #define MAX_SERVICENAME 128
 
-typedef char asciiz[MAX_USERNAME]; 
+//typedef char asciiz[MAX_USERNAME]; 
 
-/* EXEC SQL TYPE asciiz IS CHARZ(MAX_USERNAME) REFERENCE; */ 
- 
+//EXEC SQL TYPE asciiz IS CHARZ(MAX_USERNAME) REFERENCE; 
+
 /* EXEC SQL BEGIN DECLARE SECTION; */ 
-
-char data[50];
-/* EXEC SQL END DECLARE SECTION; */ 
-
-
 
 struct emp_info 
 { 
-    asciiz     emp_name; 
-    float      salary; 
-    float      commission; 
+    char     emp_name[50]; 
+    float    salary; 
+    float    commission; 
 }; 
+char data[50];
+struct emp_info *emp_rec_ptr; 
+/* EXEC SQL END DECLARE SECTION; */ 
+
 
 void sql_error(msg) 
     char *msg;
@@ -397,7 +396,8 @@ void main () {
 	// declare cursor
 	//------------------------------
 	/* EXEC SQL DECLARE salespeople CURSOR FOR 
-    SELECT ENAME 
+    //SELECT ENAME 
+    SELECT ENAME, SAL, COMM 
     FROM EMP 
     WHERE JOB LIKE 'SALES%'; */ 
  
@@ -429,7 +429,7 @@ void main () {
      //----------------------------
      // declare emp
      //---------------------------
-    struct emp_info *emp_rec_ptr; 
+    //struct emp_info *emp_rec_ptr; 
     if ((emp_rec_ptr = 
         (struct emp_info *) malloc(sizeof(struct emp_info))) == 0)
     { 
@@ -442,7 +442,7 @@ void main () {
     //-----------------------------
 	 for (;;) 
     { 
-        /* EXEC SQL FETCH salespeople INTO :data; */ 
+        /* EXEC SQL FETCH salespeople INTO :emp_rec_ptr; */ 
 
 {
         struct sqlexd sqlstm;
@@ -460,7 +460,7 @@ void main () {
         sqlstm.occurs = (unsigned int  )0;
         sqlstm.sqfoff = (           int )0;
         sqlstm.sqfmod = (unsigned int )2;
-        sqlstm.sqhstv[0] = (         void  *)data;
+        sqlstm.sqhstv[0] = (         void  *)emp_rec_ptr->emp_name;
         sqlstm.sqhstl[0] = (unsigned int  )50;
         sqlstm.sqhsts[0] = (         int  )0;
         sqlstm.sqindv[0] = (         void  *)0;
@@ -468,6 +468,22 @@ void main () {
         sqlstm.sqharm[0] = (unsigned int  )0;
         sqlstm.sqadto[0] = (unsigned short )0;
         sqlstm.sqtdso[0] = (unsigned short )0;
+        sqlstm.sqhstv[1] = (         void  *)&emp_rec_ptr->salary;
+        sqlstm.sqhstl[1] = (unsigned int  )sizeof(float);
+        sqlstm.sqhsts[1] = (         int  )0;
+        sqlstm.sqindv[1] = (         void  *)0;
+        sqlstm.sqinds[1] = (         int  )0;
+        sqlstm.sqharm[1] = (unsigned int  )0;
+        sqlstm.sqadto[1] = (unsigned short )0;
+        sqlstm.sqtdso[1] = (unsigned short )0;
+        sqlstm.sqhstv[2] = (         void  *)&emp_rec_ptr->commission;
+        sqlstm.sqhstl[2] = (unsigned int  )sizeof(float);
+        sqlstm.sqhsts[2] = (         int  )0;
+        sqlstm.sqindv[2] = (         void  *)0;
+        sqlstm.sqinds[2] = (         int  )0;
+        sqlstm.sqharm[2] = (unsigned int  )0;
+        sqlstm.sqadto[2] = (unsigned short )0;
+        sqlstm.sqtdso[2] = (unsigned short )0;
         sqlstm.sqphsv = sqlstm.sqhstv;
         sqlstm.sqphsl = sqlstm.sqhstl;
         sqlstm.sqphss = sqlstm.sqhsts;
@@ -482,10 +498,10 @@ void main () {
 }
 
  
-        printf("%s data", data);
+        //printf("%s data", data);
 
-        //printf("%-11s %9.2f %11.2f\n", emp_rec_ptr->emp_name, 
-        //        emp_rec_ptr->salary, emp_rec_ptr->commission); 
+        printf("%-11s %9.2f %11.2f\n", emp_rec_ptr->emp_name, 
+                emp_rec_ptr->salary, emp_rec_ptr->commission); 
     } 
  
 
@@ -501,7 +517,7 @@ void main () {
     sqlstm.sqladtp = &sqladt;
     sqlstm.sqltdsp = &sqltds;
     sqlstm.iters = (unsigned int  )1;
-    sqlstm.offset = (unsigned int  )85;
+    sqlstm.offset = (unsigned int  )93;
     sqlstm.cud = sqlcud0;
     sqlstm.sqlest = (unsigned char  *)&sqlca;
     sqlstm.sqlety = (unsigned short)4352;
@@ -522,7 +538,7 @@ void main () {
     sqlstm.sqladtp = &sqladt;
     sqlstm.sqltdsp = &sqltds;
     sqlstm.iters = (unsigned int  )1;
-    sqlstm.offset = (unsigned int  )100;
+    sqlstm.offset = (unsigned int  )108;
     sqlstm.cud = sqlcud0;
     sqlstm.sqlest = (unsigned char  *)&sqlca;
     sqlstm.sqlety = (unsigned short)4352;
