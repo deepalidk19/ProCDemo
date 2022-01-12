@@ -1,0 +1,22 @@
+#pragma warning(disable : 4996)
+exec sql begin declare section;
+char user_name[20],password[20];
+exec sql end declare section;
+exec sql include sqlca;
+#include<stdio.h>
+#include<conio.h>
+#include<stdlib.h>
+void main () {
+	printf("Enter the user name");
+	scanf("%s",user_name);
+	printf("Enter the password");
+	scanf("%s",password);
+	exec sql connect:user_name identified by :password;
+	if (sqlca.sqlcode==0) {
+		printf("success");
+	}
+	else {
+		printf("Error code:%d\nError message:%s",sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
+	}
+	_getch();
+}
