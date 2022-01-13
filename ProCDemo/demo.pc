@@ -1,0 +1,649 @@
+/*------------------------------------------------------------------------------
+Name: Deepali Abhyankar
+Date: 2022/01/12
+Details: 
+Program to consolidate data from two input files. Code reads the input files and
+loads them to database tables. The database tables are then joined to generate
+the output. This demo highlights C, Pro*c, PL/SQL, Oracle Database. 
+
+Tables:Student, Student Details
+
+Input: 
+a) Student input file.
+Format: StudentID, FirstName, LastName
+e.g.
+1001,Paul,Smith
+1002,Tim,Harker
+
+b) Student Detail file. 
+Format: StudentID, Grade, Year, GPA
+e.g
+1001,10,2020,4.0
+1001,11,2021,3.0
+1001,8,2019,3.0
+1001,9,2018,3.0
+1002,10,2020,4.0
+1002,11,2021,3.0
+
+c) Delimiter for input is comma (,). 
+
+Execution: 
+democlient  filename1   filename2 filename3(optional)
+   Required parameters: 
+      filename1 - Student file containg StudentID and Name
+	  filename2 - Student detail file containg grades
+      filename3 - Optional, output will be writen to this file if provided
+                - default output to stdout
+------------------------------------------------------------------------------*/
+#pragma warning(disable : 4996) /* pragma to supress warning for using scanf */
+exec sql include sqlca;
+#include<stdio.h>
+#include<conio.h>
+#include<stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+
+#define DELIMITER ","
+#define ERROR -1
+#define SUCCESS -0
+#define READ_MODE "r"
+#define WRITE_MODE "w"
+#define FILE_LENGTH 200
+#define INT_MAX_STR "2147483647"
+
+//-----------------------------------------------
+// DECLARE SQL variables
+//------------------------------------------------
+EXEC SQL BEGIN DECLARE SECTION;
+char user_name[20],password[20];
+
+struct student_details 
+{ 
+    int      studentid; 
+    char     firstname[100];
+    int      grade; 
+    float    gpa;
+    int      year;
+}; 
+struct student_details *student_record; 
+
+char firstname[100]; 
+char lastname[100]; 
+int studentid; 
+int reccount;
+int grade; 
+int year; 
+float gpa;
+
+EXEC SQL END DECLARE SECTION;
+//--------------------------------------------------
+// END OF PL/SQL declare
+//-------------------------------------------------
+
+//-------------------------------------
+// print oracle error
+//-------------------------------------
+int errrpt( void )
+{
+   printf("%.70s (%d)\n", sqlca.sqlerrm.sqlerrmc, -sqlca.sqlcode);
+   return(0);
+}
+
+//--------------------------------------------------
+// remove to remove extra spaces from string on left
+//-------------------------------------------------
+char *ltrim(char *inp)
+{
+    while(isspace(*inp)) inp++;
+    return inp;
+}
+
+//---------------------------------------------------
+// remove to remove extra spaces from string on right
+//---------------------------------------------------
+char *rtrim(char *inp)
+{
+    char* m = inp + strlen(inp);
+    while(isspace(*--m));
+    *(m+1) = '\0';
+    return inp;
+}
+
+//------------------------------------------
+// open file
+// Input: Filename, MODE
+// MODE = READ/WRITE/APPEND
+//------------------------------------------
+FILE * openfile( char *filename, char* MODE)
+{
+    printf("\nINFO: Opening file %s", filename);
+
+    FILE *fp = fopen(filename, MODE);
+    if( fp == NULL)
+    {
+        printf("\nUnable to open file.\n");
+        printf("\nPlease check whether file exists and you have read privilege.\n");
+        return NULL; 
+    }
+    return fp; 
+}
+
+//---------------------------------------------------
+// validat studentid parameter
+//--------------------------------------------------
+int validateStudentid( char* studentid, int count)
+{
+        if(studentid <=0 || strlen(studentid) > 10 || strcmp( studentid, INT_MAX_STR) > 0)
+        {
+            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+            return ERROR;
+        }
+
+        return SUCCESS;
+}
+
+//---------------------------------------------------
+// validat input parameters
+//--------------------------------------------------
+int validateInput( char *studentid, int year, float gpa, int grade, int count )
+{
+        if(validateStudentid( studentid, count) == ERROR)
+        {
+            return ERROR;
+        }
+        if ( year < 2020 || year > 2050)
+        {
+            printf("\nERROR: Invalid year in row %d. Please validate data", count);
+            return ERROR;
+        }
+        if ( gpa < 1.0 || gpa > 4.0)
+        {
+            printf("\nERROR: Invalid gpa %f in row %d. Please validate data", gpa,count);
+            return ERROR;
+        }
+        if ( grade < 9 || grade > 12)
+        {
+            printf("\nERROR: Invalid grade in row %d. Valid high school grade 9,10,11,12", count);
+            return ERROR;
+        }
+
+        return SUCCESS;
+
+}
+
+ 
+//-----------------------------------------------------------------
+// Routine to read Student master data to table
+// Input: FileName
+// Output: Data loaded to Student table
+// Note: Student table is truncated prior to load
+// 
+// Processing: 
+// - Open input file
+// - Truncate Student table
+// - For each entry in input file
+//     - parse to get StudentId, Firstname, lastname
+//     - Validate input data
+//     - Check if record already exits in Student table for StudentId
+//     - If not, then insert
+//-----------------------------------------------------------------
+int readStudentid( char *filename)
+{
+     char dataBuffer[1000];
+     char student[3][200];
+     char *token;
+     int count = 0;
+     int insertedreccount = 0;
+     int i = 0;
+
+    //------------------------------------------
+    // open file
+    //------------------------------------------
+    FILE *fp = openfile( filename, READ_MODE); 
+    if( fp == NULL) return ERROR;
+
+    //------------------------------------------
+    // delete data from Student table 
+    //------------------------------------------
+    EXEC SQL DELETE FROM STUDENT;
+
+    //------------------------------------------------------
+    // Read each record in input file and load to DB table
+    //------------------------------------------------------
+    while (fgets(dataBuffer,1000, fp)!=NULL)
+    {    
+    
+        //-----------------------
+        // increment record count
+        //-----------------------
+        count++; 
+
+        //----------------------------------------
+        // set all values to NULL
+        //----------------------------------------
+        for( int i = 0; i < 3; i++)
+         strcpy(student[i], "");
+
+
+        //-------------------------------------
+        // input values are comma delimited
+        //-------------------------------------
+        i = 0; 
+        token = strtok(dataBuffer, DELIMITER);   
+        while( token != NULL && i < 3) 
+        {
+           strncpy( student[i], token, 200 );
+           i++;
+           token = strtok(NULL, DELIMITER);
+        }
+
+        //---------------------------------
+        // each recod should have 3 fields
+        //--------------------------------
+        if( i < 3)
+        {
+
+               printf("\nERROR: Please validate data in row %d of input file. Incorrect number of parameters for record. ", count);
+               goto ERRORLOC;
+        }
+
+        //--------------------------------------------
+        // check if any of the values are null
+        //--------------------------------------------
+         for( int i = 0; i < 3; i++)
+         {
+            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
+            {
+               printf("\nERROR: Please validate data in row %d of input file. Empty values not allowed", count);
+               goto ERRORLOC;
+            }
+
+         }
+
+        //--------------------------------------------
+        // check for valid length
+        //--------------------------------------------
+        if( validateStudentid(student[0], count) == ERROR) 
+        {
+            goto ERRORLOC;
+        }
+        strcpy( firstname,student[1] );
+        strcpy( lastname,student[2] );
+        
+        studentid = atoi(student[0]); 
+        if(studentid <=0  || strlen(student[0]) > 10 || strcmp( student[0], INT_MAX_STR) > 0 )
+        {
+            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+            goto ERRORLOC;
+        }
+
+
+        //---------------------------------------------
+        // check if record already exists
+        //---------------------------------------------
+         EXEC SQL SELECT COUNT(*) INTO :reccount FROM STUDENT  WHERE STUDENTID = :studentid;
+
+        //-------------------------------------
+        // validate and insert to table
+        //-------------------------------------
+        if( reccount == 0)
+        {
+           printf("\n %d) Record being inserted to Student table", count);
+           insertedreccount++;
+           EXEC SQL INSERT INTO STUDENT(STUDENTID,FIRSTNAME,LASTNAME) VALUES ( trim(:studentid),trim(:firstname),trim(:lastname));
+        }
+        else
+        {
+		
+            printf("\nINFO: Duplicate StudentID Record in Row %d for StudentID %d in table STUDENT", count,studentid );
+        }
+    }
+    //-----------------------------------------
+    // check if input file had any data
+    //-----------------------------------------
+    if( insertedreccount == 0)
+    {
+        printf("\nERROR: No data inserted to StudentID table. Please validate input");
+        goto ERRORLOC;
+    }
+
+//----------------return-----------------------------------
+return 0;     
+
+ERRORLOC:
+    if( fp!= NULL) fclose(fp);
+    return ERROR;
+    
+
+}
+
+//-----------------------------------------------------------------
+// Routine to read Student grade details data to table
+// Input: FileName
+// Output: Data loaded to StudentDetails table
+// Note: StudentDetails table is truncated prior to load
+// 
+// Processing: 
+// - Open input file
+// - Truncate StudentDetails table
+// - For each entry in input file
+//     - parse to get StudentId, Grade, Year,GPA
+//     - Validate input data
+//     - Check if record already exits table for StudentId, Grade
+//     - If not, then insert
+//-----------------------------------------------------------------
+int readStudentDetails( char *filename)
+{
+     char dataBuffer[1000];
+     char student[4][100];
+     char *token;
+     int count = 0;
+     int i = 0;
+     int insertedreccount = 0;
+
+    //------------------------------------------
+    // open file
+    //------------------------------------------
+    FILE *fp = openfile( filename, READ_MODE); 
+    if( fp == NULL) return ERROR;
+
+    //------------------------------------------
+    // truncate existing data from table
+    //------------------------------------------
+    EXEC SQL DELETE FROM STUDENTDETAILS;
+
+    //------------------------------------------------------
+    // Read each record in input file and load to DB table
+    //------------------------------------------------------
+    while (fgets(dataBuffer,1000, fp)!=NULL)
+    {    
+    
+        //-----------------------
+        // increment record count
+        //-----------------------
+        count++; 
+
+        //----------------------------------------
+        // set all values to NULL
+        //----------------------------------------
+        for( int i = 0; i < 4; i++)
+         strcpy(student[i], "");
+
+
+        //-------------------------------------
+        // input values are comma delimited
+        //-------------------------------------
+        i = 0; 
+        token = strtok(dataBuffer, DELIMITER);   
+        while( token != NULL && i < 4) 
+        {
+           strcpy( student[i], token );
+           i++;
+           token = strtok(NULL, DELIMITER);
+        }
+
+        //---------------------------------
+        // each recod should have 3 fields
+        //--------------------------------
+        if( i < 4)
+        {
+		
+           printf("\nERROR: Please validate data in row %d of input file. Invalid number of input parameters", count);
+           goto ERRORLOC;
+        }
+
+        //--------------------------------------------
+        // check if any of the values are null
+        //--------------------------------------------
+         for( int i = 0; i < 4; i++)
+         {
+            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
+            {
+               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
+               goto ERRORLOC;
+            }
+
+         }
+
+        //---------------------------------------------
+        // check if record already exists
+        //--------------------------------------------
+        studentid = atoi(student[0]);
+        grade =  atoi(student[1]);
+        year =  atoi(student[2]);
+        gpa  = atof( student[3]);
+        if( validateInput(student[0], year, gpa , grade,count) == ERROR)
+        {
+            goto ERRORLOC;
+        }
+
+        //---------------------------------------------
+        // check if record already exists
+        //--------------------------------------------
+        EXEC SQL SELECT COUNT(*) INTO :reccount FROM STUDENTDETAILS  WHERE STUDENTID = :studentid AND GRADE = :grade ;
+
+        //-------------------------------------
+        // validate and insert to table
+        //-------------------------------------
+        if( reccount == 0)
+        {
+           printf("\n %d) Record being inserted to Student Detail table", count);
+           EXEC SQL INSERT INTO STUDENTDETAILS(STUDENTID,GRADE,YEAR, GPA) VALUES (:studentid,:grade,:year, :gpa);
+        }
+        else
+        {
+		
+            printf("\nINFO: Duplicate Student Detail Record in Row %d for StudentID %d,%d", count,studentid,grade  );
+        }
+
+
+  }   
+ //-----------------------------------------
+ // check if input file had any data
+ //-----------------------------------------
+ if( insertedreccount == 0)
+ {
+        printf("\nERROR: No data inserted to Student Detail table. Please validate input");
+        goto ERRORLOC;
+ }
+//----------------------------------return--------------------------------------------
+return 0;     
+
+ERRORLOC:
+    if( fp!= NULL) fclose(fp);
+    return ERROR;
+
+}
+
+//--------------------------------------------------
+// Routine to create a consolidated report
+// Details: 
+//   - Define cursor joing tables 
+//         Student, StudentDetails on StudentID
+//   - If outfile is not null 
+//         open output file in write mode
+//   - Open cursor
+//       if output file opened
+//            - add data to output file
+//       else print data to stdout
+//-------------------------------------------------
+int createreport( char *outfile)
+{
+
+    //-------------------------------------------------
+    // declare cursor joining Student and Details table
+    //-------------------------------------------------
+    EXEC SQL DECLARE STDREPORT CURSOR FOR 
+    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
+    FROM STUDENT A, STUDENTDETAILS B 
+    WHERE A.STUDENTID = B.STUDENTID
+    ORDER BY A.STUDENTID;
+	EXEC SQL OPEN STDREPORT;
+	EXEC SQL WHENEVER NOT FOUND DO break;
+
+
+    //----------------------------
+    // initialize memory 
+    //----------------------------
+    if ((student_record = 
+        (struct student_details *) malloc(sizeof(struct student_details))) == 0)
+    { 
+        printf("Memory allocation error.\n"); 
+        exit(EXIT_FAILURE); 
+    } 
+
+    //---------------------------------------------
+    // open output file in write mode
+    // File will be overriten if it already exists
+    //----------------------------------------------
+    FILE *fp = NULL;
+    if( strlen(outfile) > 1)
+    {
+       FILE *fp = openfile( outfile, WRITE_MODE); 
+       if( fp == NULL) return ERROR;
+    }
+
+    //------------------------------------
+    // process data
+    //------------------------------------
+    for (;;) 
+    { 
+        EXEC SQL FETCH STDREPORT INTO :student_record; 
+        if( fp == NULL)
+        {
+          printf("\n %d,%s, %d, %f, %d", student_record->studentid, ltrim( rtrim(student_record->firstname)), student_record->grade, 
+          student_record->gpa, student_record->year);
+        }
+        else
+        {        
+          fprintf( fp, "%d,%s,%d,%f,%d\n", student_record->studentid, ltrim( rtrim(student_record->firstname)), student_record->grade, 
+          student_record->gpa, student_record->year);
+        }
+
+    } 
+
+    //--------------------------------------
+    // close file, close cursor and return
+    //--------------------------------------
+    if( fp != NULL ) fclose(fp);
+    EXEC SQL CLOSE STDREPORT; 
+
+    return 0;
+
+
+}
+
+/*----------------------------------------------------------------
+* Function to login to database
+* getLoginDetails is an extern function to get userid and pwd
+------------------------------------------------------------------*/
+int dblogin()
+{
+    //------------------------------------------
+    // extern function to get login credentials
+    //------------------------------------------
+    //getlogindetails();  
+	strcpy(user_name, "system");
+	strcpy(password, "or@cl321c");
+
+    //-----------------------------------
+    // login
+    //-----------------------------------
+  	exec sql connect:user_name identified by :password;
+	if (sqlca.sqlcode==0) {
+		printf("success"); return SUCCESS; 
+	}
+	else {
+		printf("Error code:%d\nError message:%s",sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
+        return ERROR; 
+	}
+
+}
+
+
+
+//----------------------------------------------
+// Main routine
+//----------------------------------------------
+int main (int argc, char *argv[]) {
+
+    //-------------------------------------------------------------
+    // check input arguments
+    // 1. Input Student file - Required
+    // 2. Student detail file - Required
+    // 3. Output file - optional
+    //                  o/p sent to stdout if file is not provided
+    //--------------------------------------------------------------
+    if( argc < 3)
+    {
+        printf("\nERROR: Input files not provided");
+        printf("\nRequired parameters: ");
+        printf("\n StudentFile - csv file containing student details ");
+        printf("\n GradeFile   - csv file containing student grade details ");
+        exit(0);
+    }
+
+    char inputfile1[FILE_LENGTH];
+    char inputfile2[FILE_LENGTH];
+    char outputfile[FILE_LENGTH];
+    strncpy( inputfile1, argv[1], FILE_LENGTH);
+    strncpy( inputfile2, argv[2], FILE_LENGTH);
+
+    if( argc == 4)
+    { 
+       strncpy( outputfile, argv[3],FILE_LENGTH);
+    }
+    else 
+    { 
+       strcpy( outputfile, "");
+    }
+   
+    
+    //-------------------------------------
+    // login to database
+    //-------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO errexit;
+    if( dblogin() != SUCCESS) { goto errexit; }
+
+
+
+    //-----------------------------------------------
+    // read studentID information into table STUDENT
+    //-----------------------------------------------
+    int ret = readStudentid( inputfile1);
+    if( ret != 0 )
+    {
+        goto errexit; 
+    }
+    
+
+    //----------------------------------------------
+    // read student details to table STUDENTDETAILS
+    //----------------------------------------------
+    ret = readStudentDetails( inputfile2);
+    if( ret != 0 )
+    {
+        goto errexit; 
+    }
+
+    //-----------------------------------------------
+    // get consolidated report
+    //-----------------------------------------------
+    ret = createreport(outputfile);
+
+
+//----------------------------
+// close
+//----------------------------
+printf("\n Processing successfully completed.\n\n");
+EXEC SQL COMMIT WORK RELEASE; 
+exit(EXIT_SUCCESS); 
+
+errexit:
+   errrpt();
+   EXEC SQL WHENEVER SQLERROR CONTINUE;
+   EXEC SQL ROLLBACK WORK RELEASE;
+   return 1;
+	
+}
