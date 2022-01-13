@@ -46,7 +46,7 @@ exec sql include sqlca;
 
 #define DELIMITER ","
 #define ERROR -1
-#define SUCCESS -0
+#define SUCCESS 0
 #define READ_MODE "r"
 #define WRITE_MODE "w"
 #define FILE_LENGTH 200
@@ -134,13 +134,29 @@ FILE * openfile( char *filename, char* MODE)
 //--------------------------------------------------
 int validateStudentid( char* studentid, int count)
 {
-        if(studentid <=0 || strlen(studentid) > 10 || strcmp( studentid, INT_MAX_STR) > 0)
-        {
-            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
-            return ERROR;
-        }
 
-        return SUCCESS;
+  //-----------------------------
+  // check all chars are digits
+  //-----------------------------
+  int i=0;
+  while(i<strlen(studentid) )
+  {
+     
+     if(studentid[i] > 57 || studentid[i] < 48)
+     {
+        printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+        return ERROR;
+     }
+    i++;
+  }
+
+  if(studentid <=0 || strlen(studentid) > 10 || strcmp( studentid, INT_MAX_STR) > 0)
+  {
+       printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+       return ERROR;
+  }
+
+   return SUCCESS;
 }
 
 //---------------------------------------------------
@@ -152,7 +168,7 @@ int validateInput( char *studentid, int year, float gpa, int grade, int count )
         {
             return ERROR;
         }
-        if ( year < 2020 || year > 2050)
+        if ( year < 2010 || year > 2050)
         {
             printf("\nERROR: Invalid year in row %d. Please validate data", count);
             return ERROR;
@@ -268,15 +284,15 @@ int readStudentid( char *filename)
         {
             goto ERRORLOC;
         }
-        strcpy( firstname,student[1] );
-        strcpy( lastname,student[2] );
-        
-        studentid = atoi(student[0]); 
-        if(studentid <=0  || strlen(student[0]) > 10 || strcmp( student[0], INT_MAX_STR) > 0 )
+        if( strlen(student[1]) > 100 || strlen(student[2]) > 100) 
         {
-            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+            printf("\nERROR: Please validate data in row %d of input file. FirstName, LastName should be less than 100 charaters", count);
             goto ERRORLOC;
         }
+        strcpy( firstname,student[1] );
+        strcpy( lastname,student[2] );
+        studentid = atoi(student[0]); 
+       
 
 
         //---------------------------------------------
@@ -428,6 +444,7 @@ int readStudentDetails( char *filename)
         //-------------------------------------
         if( reccount == 0)
         {
+           insertedreccount++;
            printf("\n %d) Record being inserted to Student Detail table", count);
            EXEC SQL INSERT INTO STUDENTDETAILS(STUDENTID,GRADE,YEAR, GPA) VALUES (:studentid,:grade,:year, :gpa);
         }
@@ -478,7 +495,7 @@ int createreport( char *outfile)
     SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
     FROM STUDENT A, STUDENTDETAILS B 
     WHERE A.STUDENTID = B.STUDENTID
-    ORDER BY A.STUDENTID;
+    ORDER BY A.STUDENTID, GRADE;
 	EXEC SQL OPEN STDREPORT;
 	EXEC SQL WHENEVER NOT FOUND DO break;
 
@@ -529,7 +546,13 @@ int createreport( char *outfile)
     if( fp != NULL ) fclose(fp);
     EXEC SQL CLOSE STDREPORT; 
 
-    return 0;
+
+//----------------------------------return--------------------------------------------
+return 0;     
+
+ERRORLOC:
+    if( fp!= NULL) fclose(fp);
+    return ERROR;
 
 
 }
@@ -614,7 +637,7 @@ int main (int argc, char *argv[]) {
     int ret = readStudentid( inputfile1);
     if( ret != 0 )
     {
-        goto errexit; 
+        goto CLEANUP; 
     }
     
 
@@ -624,7 +647,7 @@ int main (int argc, char *argv[]) {
     ret = readStudentDetails( inputfile2);
     if( ret != 0 )
     {
-        goto errexit; 
+        goto CLEANUP; 
     }
 
     //-----------------------------------------------
@@ -632,12 +655,17 @@ int main (int argc, char *argv[]) {
     //-----------------------------------------------
     ret = createreport(outputfile);
 
+    //------------------------------------------
+    // commit data in db
+    //------------------------------------------
+    EXEC SQL COMMIT WORK RELEASE;
+
 
 //----------------------------
 // close
 //----------------------------
-printf("\n Processing successfully completed.\n\n");
-EXEC SQL COMMIT WORK RELEASE; 
+CLEANUP:
+printf("\nProcessing completed.\n\n");
 exit(EXIT_SUCCESS); 
 
 errexit:

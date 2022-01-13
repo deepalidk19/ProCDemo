@@ -131,7 +131,7 @@ extern void sqliem(unsigned char *, signed int *);
 
  static const char *sq0007 = 
 "select A.STUDENTID ,FIRSTNAME ,GRADE ,GPA ,YEAR  from STUDENT A ,STUDENTDETA\
-ILS B where A.STUDENTID=B.STUDENTID order by A.STUDENTID            ";
+ILS B where A.STUDENTID=B.STUDENTID order by A.STUDENTID,GRADE            ";
 
 typedef struct { unsigned short len; unsigned char arr[1]; } VARCHAR;
 typedef struct { unsigned short len; unsigned char arr[1]; } varchar;
@@ -139,18 +139,18 @@ typedef struct { unsigned short len; unsigned char arr[1]; } varchar;
 /* cud (compilation unit data) array */
 static const short sqlcud0[] =
 {13,4130,178,0,0,
-5,0,0,1,21,0,2,209,0,0,0,0,0,1,0,
-20,0,0,2,59,0,4,285,0,0,2,1,0,1,0,2,3,0,0,1,3,0,0,
-43,0,0,3,89,0,3,294,0,0,3,3,0,1,0,1,3,0,0,1,97,0,0,1,97,0,0,
-70,0,0,4,28,0,2,354,0,0,0,0,0,1,0,
-85,0,0,5,82,0,4,424,0,0,3,2,0,1,0,2,3,0,0,1,3,0,0,1,3,0,0,
-112,0,0,6,78,0,3,432,0,0,4,4,0,1,0,1,3,0,0,1,3,0,0,1,3,0,0,1,4,0,0,
-143,0,0,7,144,0,9,482,0,0,0,0,0,1,0,
-158,0,0,7,0,0,13,512,0,0,5,0,0,1,0,2,3,0,0,2,97,0,0,2,3,0,0,2,4,0,0,2,3,0,0,
-193,0,0,7,0,0,15,530,0,0,0,0,0,1,0,
-208,0,0,0,0,0,27,553,0,0,4,4,0,1,0,1,97,0,0,1,97,0,0,1,10,0,0,1,10,0,0,
-239,0,0,9,0,0,30,640,0,0,0,0,0,1,0,
-254,0,0,10,0,0,32,646,0,0,0,0,0,1,0,
+5,0,0,1,21,0,2,225,0,0,0,0,0,1,0,
+20,0,0,2,59,0,4,301,0,0,2,1,0,1,0,2,3,0,0,1,3,0,0,
+43,0,0,3,89,0,3,310,0,0,3,3,0,1,0,1,3,0,0,1,97,0,0,1,97,0,0,
+70,0,0,4,28,0,2,370,0,0,0,0,0,1,0,
+85,0,0,5,82,0,4,440,0,0,3,2,0,1,0,2,3,0,0,1,3,0,0,1,3,0,0,
+112,0,0,6,78,0,3,449,0,0,4,4,0,1,0,1,3,0,0,1,3,0,0,1,3,0,0,1,4,0,0,
+143,0,0,7,150,0,9,499,0,0,0,0,0,1,0,
+158,0,0,7,0,0,13,529,0,0,5,0,0,1,0,2,3,0,0,2,97,0,0,2,3,0,0,2,4,0,0,2,3,0,0,
+193,0,0,7,0,0,15,547,0,0,0,0,0,1,0,
+208,0,0,0,0,0,27,576,0,0,4,4,0,1,0,1,97,0,0,1,97,0,0,1,10,0,0,1,10,0,0,
+239,0,0,9,0,0,30,661,0,0,0,0,0,1,0,
+254,0,0,10,0,0,32,674,0,0,0,0,0,1,0,
 };
 
 
@@ -303,7 +303,7 @@ SQLCA_STORAGE_CLASS struct sqlca sqlca
 
 #define DELIMITER ","
 #define ERROR -1
-#define SUCCESS -0
+#define SUCCESS 0
 #define READ_MODE "r"
 #define WRITE_MODE "w"
 #define FILE_LENGTH 200
@@ -393,13 +393,29 @@ FILE * openfile( char *filename, char* MODE)
 //--------------------------------------------------
 int validateStudentid( char* studentid, int count)
 {
-        if(studentid <=0 || strlen(studentid) > 10 || strcmp( studentid, INT_MAX_STR) > 0)
-        {
-            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
-            return ERROR;
-        }
 
-        return SUCCESS;
+  //-----------------------------
+  // check all chars are digits
+  //-----------------------------
+  int i=0;
+  while(i<strlen(studentid) )
+  {
+     
+     if(studentid[i] > 57 || studentid[i] < 48)
+     {
+        printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+        return ERROR;
+     }
+    i++;
+  }
+
+  if(studentid <=0 || strlen(studentid) > 10 || strcmp( studentid, INT_MAX_STR) > 0)
+  {
+       printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+       return ERROR;
+  }
+
+   return SUCCESS;
 }
 
 //---------------------------------------------------
@@ -411,7 +427,7 @@ int validateInput( char *studentid, int year, float gpa, int grade, int count )
         {
             return ERROR;
         }
-        if ( year < 2020 || year > 2050)
+        if ( year < 2010 || year > 2050)
         {
             printf("\nERROR: Invalid year in row %d. Please validate data", count);
             return ERROR;
@@ -545,15 +561,15 @@ int readStudentid( char *filename)
         {
             goto ERRORLOC;
         }
-        strcpy( firstname,student[1] );
-        strcpy( lastname,student[2] );
-        
-        studentid = atoi(student[0]); 
-        if(studentid <=0  || strlen(student[0]) > 10 || strcmp( student[0], INT_MAX_STR) > 0 )
+        if( strlen(student[1]) > 100 || strlen(student[2]) > 100) 
         {
-            printf("\nERROR: Invalid StudentID in row %d. Please validate data", count);
+            printf("\nERROR: Please validate data in row %d of input file. FirstName, LastName should be less than 100 charaters", count);
             goto ERRORLOC;
         }
+        strcpy( firstname,student[1] );
+        strcpy( lastname,student[2] );
+        studentid = atoi(student[0]); 
+       
 
 
         //---------------------------------------------
@@ -875,6 +891,7 @@ int readStudentDetails( char *filename)
         //-------------------------------------
         if( reccount == 0)
         {
+           insertedreccount++;
            printf("\n %d) Record being inserted to Student Detail table", count);
            /* EXEC SQL INSERT INTO STUDENTDETAILS(STUDENTID,GRADE,YEAR, GPA) VALUES (:studentid,:grade,:year, :gpa); */ 
 
@@ -985,7 +1002,7 @@ int createreport( char *outfile)
     SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
     FROM STUDENT A, STUDENTDETAILS B 
     WHERE A.STUDENTID = B.STUDENTID
-    ORDER BY A.STUDENTID; */ 
+    ORDER BY A.STUDENTID, GRADE; */ 
 
 	/* EXEC SQL OPEN STDREPORT; */ 
 
@@ -1147,7 +1164,13 @@ int createreport( char *outfile)
 
  
 
-    return 0;
+
+//----------------------------------return--------------------------------------------
+return 0;     
+
+ERRORLOC:
+    if( fp!= NULL) fclose(fp);
+    return ERROR;
 
 
 }
@@ -1280,7 +1303,7 @@ int main (int argc, char *argv[]) {
     int ret = readStudentid( inputfile1);
     if( ret != 0 )
     {
-        goto errexit; 
+        goto CLEANUP; 
     }
     
 
@@ -1290,7 +1313,7 @@ int main (int argc, char *argv[]) {
     ret = readStudentDetails( inputfile2);
     if( ret != 0 )
     {
-        goto errexit; 
+        goto CLEANUP; 
     }
 
     //-----------------------------------------------
@@ -1298,30 +1321,35 @@ int main (int argc, char *argv[]) {
     //-----------------------------------------------
     ret = createreport(outputfile);
 
+    //------------------------------------------
+    // commit data in db
+    //------------------------------------------
+    /* EXEC SQL COMMIT WORK RELEASE; */ 
+
+{
+    struct sqlexd sqlstm;
+    sqlstm.sqlvsn = 13;
+    sqlstm.arrsiz = 5;
+    sqlstm.sqladtp = &sqladt;
+    sqlstm.sqltdsp = &sqltds;
+    sqlstm.iters = (unsigned int  )1;
+    sqlstm.offset = (unsigned int  )239;
+    sqlstm.cud = sqlcud0;
+    sqlstm.sqlest = (unsigned char  *)&sqlca;
+    sqlstm.sqlety = (unsigned short)4352;
+    sqlstm.occurs = (unsigned int  )0;
+    sqlcxt((void **)0, &sqlctx, &sqlstm, &sqlfpn);
+    if (sqlca.sqlcode < 0) goto errexit;
+}
+
+
+
 
 //----------------------------
 // close
 //----------------------------
-printf("\n Processing successfully completed.\n\n");
-/* EXEC SQL COMMIT WORK RELEASE; */ 
-
-{
- struct sqlexd sqlstm;
- sqlstm.sqlvsn = 13;
- sqlstm.arrsiz = 5;
- sqlstm.sqladtp = &sqladt;
- sqlstm.sqltdsp = &sqltds;
- sqlstm.iters = (unsigned int  )1;
- sqlstm.offset = (unsigned int  )239;
- sqlstm.cud = sqlcud0;
- sqlstm.sqlest = (unsigned char  *)&sqlca;
- sqlstm.sqlety = (unsigned short)4352;
- sqlstm.occurs = (unsigned int  )0;
- sqlcxt((void **)0, &sqlctx, &sqlstm, &sqlfpn);
- if (sqlca.sqlcode < 0) goto errexit;
-}
-
- 
+CLEANUP:
+printf("\nProcessing completed.\n\n");
 exit(EXIT_SUCCESS); 
 
 errexit:
