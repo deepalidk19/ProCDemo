@@ -7,115 +7,409 @@ exec sql include sqlca;
 #include<conio.h>
 #include<stdlib.h>
 #include <string.h>
+#include <ctype.h>
 /*system/or@cl321c*/
 
-#define MAX_USERNAME     31
-#define MAX_SERVICENAME 128
 
-//typedef char asciiz[MAX_USERNAME]; 
+#define DELIMITER ","
+#define ERROR -1
+#define SUCCESS -0
 
-//EXEC SQL TYPE asciiz IS CHARZ(MAX_USERNAME) REFERENCE; 
-
+//-----------------------------------------------
+// DECLARE SQL variables
+//------------------------------------------------
 EXEC SQL BEGIN DECLARE SECTION;
-struct emp_info 
+
+
+struct student_details 
 { 
-    char     emp_name[50]; 
-    float    salary; 
-    float    commission; 
+    int      studentid; 
+    char     firstname[50];
+    int      grade; 
+    float    gpa;
+    int      year;
 }; 
+struct student_details *student_rec_ptr; 
 char data[50];
-struct emp_info *emp_rec_ptr; 
+
+char firstname[100];
+char lastname[100];
+int studentid; 
+int reccount;
+int grade; 
+int year; 
+float gpa;
+
 EXEC SQL END DECLARE SECTION;
+//--------------------------------------------------
+// END OF PL/SQL declare
+//-------------------------------------------------
 
-void sql_error(msg) 
-    char *msg;
-{ 
+int errrpt( void )
+   {
+   printf("%.70s (%d)\n", sqlca.sqlerrm.sqlerrmc, -sqlca.sqlcode);
+   return(0);
+   }
+
+char *ltrim(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+char *rtrim(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+ 
+//--------------------------------------------------
+// Routine to read Student master data to table
+//-------------------------------------------------
+int readStudentid( char *filename)
+{
+     char dataBuffer[500];
+     char student[3][100];
+     char *token;
+     int count = 0;
+     int i = 0;
+
+    //------------------------------------------
+    // open file
+    //------------------------------------------
+    FILE *fp = fopen(filename, "r");
+    if( fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        printf("Please check whether file exists and you have read privilege.\n");
+        return ERROR; 
+    }
+
+    //------------------------------------------------------
+    // Read each record in input file and load to DB table
+    //------------------------------------------------------
+    while (fgets(dataBuffer,1000, fp)!=NULL)
+    {    
     
+        //-----------------------
+        // increment record count
+        //-----------------------
+        count++; 
+
+        //----------------------------------------
+        // set all values to NULL
+        //----------------------------------------
+        for( int i = 0; i < 3; i++)
+         strcpy(student[i], "");
+
+
+        //-------------------------------------
+        // input values are comma delimited
+        //-------------------------------------
+        i = 0; 
+        token = strtok(dataBuffer, DELIMITER);   
+        while( token != NULL ) 
+        {
+           strcpy( student[i], token );
+           i++;
+           token = strtok(NULL, DELIMITER);
+        }
+
+        //---------------------------------
+        // each recod should have 3 fields
+        //--------------------------------
+        if( i < 2)
+        {
+               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
+               return ERROR;
+        }
+
+        //--------------------------------------------
+        // check if any of the values are null
+        //--------------------------------------------
+         for( int i = 0; i < 3; i++)
+         {
+            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
+            {
+               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
+               return ERROR;
+            }
+
+         }
+
+        //---------------------------------------------
+        // check if record already exists
+        //--------------------------------------------
+         studentid = atoi(student[0]); 
+         strcpy( firstname,student[1] );
+         strcpy( lastname,student[2] );
+
+         EXEC SQL SELECT COUNT(*) INTO :reccount FROM STUDENT  WHERE STUDENTID = :studentid;
+        //-------------------------------------
+        // validate and insert to table
+        //-------------------------------------
+        if( reccount == 0)
+        {
+           printf("\n %d) Record being inserted to Student table", count);
+           EXEC SQL INSERT INTO STUDENT(STUDENTID,FIRSTNAME,LASTNAME) VALUES (:studentid,:firstname,:lastname);
+        }
+        else
+        {
+            printf("\nINFO: Duplicate Record in Row %d for StudentID %d", count,studentid );
+        }
+
+
+    }   
+    return 0; 
+
+}
+
+//--------------------------------------------------
+// Routine to read Student master data to table
+//-------------------------------------------------
+int readStudentDetails( char *filename)
+{
+     char dataBuffer[500];
+     char student[4][100];
+     char *token;
+     int count = 0;
+     int i = 0;
+
+    //------------------------------------------
+    // open file
+    //------------------------------------------
+    FILE *fp = fopen(filename, "r");
+    if( fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        printf("Please check whether file exists and you have read privilege.\n");
+        return ERROR; 
+    }
+
+    //------------------------------------------------------
+    // Read each record in input file and load to DB table
+    //------------------------------------------------------
+    while (fgets(dataBuffer,1000, fp)!=NULL)
+    {    
     
+        //-----------------------
+        // increment record count
+        //-----------------------
+        count++; 
 
-	
-    EXEC SQL WHENEVER SQLERROR CONTINUE;
-
-    printf("\n%s\n", msg);
-
-/* Call sqlglm() to get the complete text of the
- * error message.
- */
-    //buf_len = sizeof (err_msg);
-    //sqlglm((unsigned char *) err_msg, &buf_len, &msg_len);
-    printf("ERROR");
-
-    EXEC SQL ROLLBACK RELEASE;
-    exit(EXIT_FAILURE);
-} 
-
-void main () {
+        //----------------------------------------
+        // set all values to NULL
+        //----------------------------------------
+        for( int i = 0; i < 4; i++)
+         strcpy(student[i], "");
 
 
-     
-	//-------------------------------------
-	// login
-	//-------------------------------------
-	strcpy(user_name, "system");
-	strcpy(password, "or@cl321c");
-  	exec sql connect:user_name identified by :password;
-	if (sqlca.sqlcode==0) {
-		printf("success");
-	}
-	else {
-		printf("Error code:%d\nError message:%s",sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
-	}
+        //-------------------------------------
+        // input values are comma delimited
+        //-------------------------------------
+        i = 0; 
+        token = strtok(dataBuffer, DELIMITER);   
+        while( token != NULL ) 
+        {
+           strcpy( student[i], token );
+           i++;
+           token = strtok(NULL, DELIMITER);
+        }
 
-	//-------------------------------
-	// code to insert a row
-	//------------------------------
-	//EXEC SQL INSERT INTO TEST (NAME) VALUES ('Deepali');
-	//EXEC SQL COMMIT WORK RELEASE;
+        //---------------------------------
+        // each recod should have 3 fields
+        //--------------------------------
+        if( i < 4)
+        {
+               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
+               return ERROR;
+        }
+
+        //--------------------------------------------
+        // check if any of the values are null
+        //--------------------------------------------
+         for( int i = 0; i < 4; i++)
+         {
+            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
+            {
+               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
+               return ERROR;
+            }
+
+         }
+
+        //---------------------------------------------
+        // check if record already exists
+        //--------------------------------------------
+        studentid = atoi(student[0]);
+        grade =  atoi(student[1]);
+        year =  atoi(student[2]);
+        gpa  = atof( student[3]);
+        EXEC SQL SELECT COUNT(*) INTO :reccount FROM STUDENTDETAILS  WHERE STUDENTID = :studentid AND GRADE = :grade ;
+        //-------------------------------------
+        // validate and insert to table
+        //-------------------------------------
+        if( reccount == 0)
+        {
+           printf("\n %d) Record being inserted to Student table", count);
+           EXEC SQL INSERT INTO STUDENTDETAILS(STUDENTID,GRADE,YEAR, GPA) VALUES (:studentid,:grade,:year, :gpa);
+        }
+        else
+        {
+            printf("\nINFO: Duplicate Record in Row %d for StudentID %d,%d", count,studentid,grade  );
+        }
 
 
-	//-------------------------------
-	// declare cursor
-	//------------------------------
-	EXEC SQL DECLARE salespeople CURSOR FOR 
-    //SELECT ENAME 
-    SELECT ENAME, SAL, COMM 
-    FROM EMP 
-    WHERE JOB LIKE 'SALES%'; 
-	EXEC SQL OPEN salespeople;
+    }   
+    return 0; 
+
+}
+
+//--------------------------------------------------
+// Routine to create a consolidated report
+//-------------------------------------------------
+int createreport( char *outfile)
+{
+
+    //-------------------------------------------------
+    // declare cursor joining Student and Details table
+    //-------------------------------------------------
+    EXEC SQL DECLARE STDREPORT CURSOR FOR 
+    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
+    FROM STUDENT A, STUDENTDETAILS B 
+    WHERE A.STUDENTID = B.STUDENTID
+    ORDER BY A.STUDENTID;
+	EXEC SQL OPEN STDREPORT;
 	EXEC SQL WHENEVER NOT FOUND DO break;
 
-     //----------------------------
-     // declare emp
-     //---------------------------
-    //struct emp_info *emp_rec_ptr; 
-    if ((emp_rec_ptr = 
-        (struct emp_info *) malloc(sizeof(struct emp_info))) == 0)
+
+    //----------------------------
+    // initialize memory 
+    //----------------------------
+    if ((student_rec_ptr = 
+        (struct student_details *) malloc(sizeof(struct student_details))) == 0)
     { 
         printf("Memory allocation error.\n"); 
         exit(EXIT_FAILURE); 
     } 
 
-    //------------------------------
-    // fetch cursor
-    //-----------------------------
-	 for (;;) 
+    //-------------------------------------
+    // open output file in write mode
+    //-------------------------------------
+    FILE *fp = fopen(outfile, "w");
+    if( fp == NULL)
+    {
+        printf("Unable to open file.\n");
+        printf("Please check whether file exists and you have read privilege.\n");
+        return ERROR; 
+    }
+
+    //------------------------------------
+    // process data
+    //------------------------------------
+    for (;;) 
     { 
-        EXEC SQL FETCH salespeople INTO :emp_rec_ptr; 
-        //printf("%s data", data);
+        EXEC SQL FETCH STDREPORT INTO :student_rec_ptr; 
+        printf("\n Combined report: %d,%s, %d, %f, %d", student_rec_ptr->studentid, student_rec_ptr->firstname, student_rec_ptr->grade, 
+        student_rec_ptr->gpa, student_rec_ptr->year);
+        ltrim(rtrim(student_rec_ptr->firstname));
+        fprintf( fp, "\n%d,%s,%d,%f,%d", student_rec_ptr->studentid, student_rec_ptr->firstname, student_rec_ptr->grade, 
+        student_rec_ptr->gpa, student_rec_ptr->year);
 
-        printf("%-11s %9.2f %11.2f\n", emp_rec_ptr->emp_name, 
-                emp_rec_ptr->salary, emp_rec_ptr->commission); 
     } 
+    fclose(fp);
+    EXEC SQL CLOSE STDREPORT; 
+
+    return 0;
+
+
+}
+
+int dblogin()
+{
+	strcpy(user_name, "system");
+	strcpy(password, "or@cl321c");
+  	exec sql connect:user_name identified by :password;
+	if (sqlca.sqlcode==0) {
+		printf("success"); return SUCCESS; 
+	}
+	else {
+		printf("Error code:%d\nError message:%s",sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
+        return ERROR; 
+	}
+
+}
+
+
+
+
+//----------------------------------------------
+// Main routine
+//----------------------------------------------
+
+int main () {
+
+    //------------------------------------------
+    // variable declaration
+    //------------------------------------------
+    char filename1[100];
+
+    //-------------------------------------
+	// login to database
+	//-------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO errexit;
+    if( dblogin() != SUCCESS) { goto errexit; }
+
+
+    //-----------------------------------------------
+    // read studentID information into table STUDENT
+    //-----------------------------------------------
+    strcpy( filename1, "C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\input1.dat");
+    int ret = readStudentid( filename1);
+    if( ret != 0 )
+    {
+        goto errexit; 
+    }
+    
+
+    //----------------------------------------------
+    // read student details to table STUDENTDETAILS
+    //----------------------------------------------
+    strcpy( filename1, "C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\input2.dat");
+    ret = readStudentDetails( filename1);
+    if( ret != 0 )
+    {
+        goto errexit; 
+    }
+    
+
+
+    //-----------------------------------------------
+    // get consolidated report
+    //-----------------------------------------------
+    ret = createreport("C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\output.dat"); 
+
+
+    
+
+
  
 
-    //----------------------------
-    // close
-    //----------------------------
-    EXEC SQL CLOSE salespeople; 
- 
-    printf("\nArrivederci.\n\n");
+//----------------------------
+// close
+//----------------------------
+printf("\n Processing successfully completed.\n\n");
+EXEC SQL COMMIT WORK RELEASE; 
+//_getch();
+exit(EXIT_SUCCESS); 
 
-    EXEC SQL COMMIT WORK RELEASE; 
-    exit(EXIT_SUCCESS); 
-	_getch();
+errexit:
+   errrpt();
+   EXEC SQL WHENEVER SQLERROR CONTINUE;
+   EXEC SQL ROLLBACK WORK RELEASE;
+   return 1;
+	
 }
