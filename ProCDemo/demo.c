@@ -139,18 +139,18 @@ typedef struct { unsigned short len; unsigned char arr[1]; } varchar;
 /* cud (compilation unit data) array */
 static const short sqlcud0[] =
 {13,4130,178,0,0,
-5,0,0,1,21,0,2,225,0,0,0,0,0,1,0,
-20,0,0,2,59,0,4,301,0,0,2,1,0,1,0,2,3,0,0,1,3,0,0,
-43,0,0,3,89,0,3,310,0,0,3,3,0,1,0,1,3,0,0,1,97,0,0,1,97,0,0,
-70,0,0,4,28,0,2,370,0,0,0,0,0,1,0,
-85,0,0,5,82,0,4,440,0,0,3,2,0,1,0,2,3,0,0,1,3,0,0,1,3,0,0,
-112,0,0,6,78,0,3,449,0,0,4,4,0,1,0,1,3,0,0,1,3,0,0,1,3,0,0,1,4,0,0,
-143,0,0,7,150,0,9,499,0,0,0,0,0,1,0,
-158,0,0,7,0,0,13,529,0,0,5,0,0,1,0,2,3,0,0,2,97,0,0,2,3,0,0,2,4,0,0,2,3,0,0,
-193,0,0,7,0,0,15,547,0,0,0,0,0,1,0,
-208,0,0,0,0,0,27,576,0,0,4,4,0,1,0,1,97,0,0,1,97,0,0,1,10,0,0,1,10,0,0,
-239,0,0,9,0,0,30,661,0,0,0,0,0,1,0,
-254,0,0,10,0,0,32,674,0,0,0,0,0,1,0,
+5,0,0,1,21,0,2,224,0,0,0,0,0,1,0,
+20,0,0,2,59,0,4,298,0,0,2,1,0,1,0,2,3,0,0,1,3,0,0,
+43,0,0,3,89,0,3,307,0,0,3,3,0,1,0,1,3,0,0,1,97,0,0,1,97,0,0,
+70,0,0,4,28,0,2,367,0,0,0,0,0,1,0,
+85,0,0,5,82,0,4,437,0,0,3,2,0,1,0,2,3,0,0,1,3,0,0,1,3,0,0,
+112,0,0,6,78,0,3,446,0,0,4,4,0,1,0,1,3,0,0,1,3,0,0,1,3,0,0,1,4,0,0,
+143,0,0,7,150,0,9,517,0,0,0,0,0,1,0,
+158,0,0,7,0,0,13,525,0,0,5,0,0,1,0,2,3,0,0,2,97,0,0,2,3,0,0,2,4,0,0,2,3,0,0,
+193,0,0,7,0,0,15,543,0,0,0,0,0,1,0,
+208,0,0,0,0,0,27,572,0,0,4,4,0,1,0,1,97,0,0,1,97,0,0,1,10,0,0,1,10,0,0,
+239,0,0,9,0,0,30,657,0,0,0,0,0,1,0,
+254,0,0,10,0,0,32,670,0,0,0,0,0,1,0,
 };
 
 
@@ -350,7 +350,7 @@ int errrpt( void )
 }
 
 //--------------------------------------------------
-// remove to remove extra spaces from string on left
+// code to remove extra spaces from string on left
 //-------------------------------------------------
 char *ltrim(char *inp)
 {
@@ -359,7 +359,7 @@ char *ltrim(char *inp)
 }
 
 //---------------------------------------------------
-// remove to remove extra spaces from string on right
+// code to remove extra spaces from string on right
 //---------------------------------------------------
 char *rtrim(char *inp)
 {
@@ -381,8 +381,7 @@ FILE * openfile( char *filename, char* MODE)
     FILE *fp = fopen(filename, MODE);
     if( fp == NULL)
     {
-        printf("\nUnable to open file.\n");
-        printf("\nPlease check whether file exists and you have read privilege.\n");
+        printf("\nUnable to open file %s, ", filename);
         return NULL; 
     }
     return fp; 
@@ -532,7 +531,7 @@ int readStudentid( char *filename)
         }
 
         //---------------------------------
-        // each recod should have 3 fields
+        // each record should have 3 fields
         //--------------------------------
         if( i < 3)
         {
@@ -555,7 +554,7 @@ int readStudentid( char *filename)
          }
 
         //--------------------------------------------
-        // check for valid length
+        // check for numeric and valid length
         //--------------------------------------------
         if( validateStudentid(student[0], count) == ERROR) 
         {
@@ -569,8 +568,6 @@ int readStudentid( char *filename)
         strcpy( firstname,student[1] );
         strcpy( lastname,student[2] );
         studentid = atoi(student[0]); 
-       
-
 
         //---------------------------------------------
         // check if record already exists
@@ -686,7 +683,6 @@ TID=:b1";
         }
         else
         {
-		
             printf("\nINFO: Duplicate StudentID Record in Row %d for StudentID %d in table STUDENT", count,studentid );
         }
     }
@@ -700,6 +696,7 @@ TID=:b1";
     }
 
 //----------------return-----------------------------------
+if( fp!= NULL) fclose(fp);
 return 0;     
 
 ERRORLOC:
@@ -793,7 +790,7 @@ int readStudentDetails( char *filename)
         }
 
         //---------------------------------
-        // each recod should have 3 fields
+        // each recod should have 4 fields
         //--------------------------------
         if( i < 4)
         {
@@ -816,7 +813,7 @@ int readStudentDetails( char *filename)
          }
 
         //---------------------------------------------
-        // check if record already exists
+        // validate input data
         //--------------------------------------------
         studentid = atoi(student[0]);
         grade =  atoi(student[1]);
@@ -886,9 +883,9 @@ int readStudentDetails( char *filename)
 
 
 
-        //-------------------------------------
-        // validate and insert to table
-        //-------------------------------------
+        //-----------------------------------------
+        // insert to table if record does not exist
+        //-----------------------------------------
         if( reccount == 0)
         {
            insertedreccount++;
@@ -957,7 +954,6 @@ PA) values (:b0,:b1,:b2,:b3)";
         }
         else
         {
-		
             printf("\nINFO: Duplicate Student Detail Record in Row %d for StudentID %d,%d", count,studentid,grade  );
         }
 
@@ -972,6 +968,7 @@ PA) values (:b0,:b1,:b2,:b3)";
         goto ERRORLOC;
  }
 //----------------------------------return--------------------------------------------
+if( fp!= NULL) fclose(fp);
 return 0;     
 
 ERRORLOC:
@@ -995,41 +992,6 @@ ERRORLOC:
 int createreport( char *outfile)
 {
 
-    //-------------------------------------------------
-    // declare cursor joining Student and Details table
-    //-------------------------------------------------
-    /* EXEC SQL DECLARE STDREPORT CURSOR FOR 
-    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
-    FROM STUDENT A, STUDENTDETAILS B 
-    WHERE A.STUDENTID = B.STUDENTID
-    ORDER BY A.STUDENTID, GRADE; */ 
-
-	/* EXEC SQL OPEN STDREPORT; */ 
-
-{
- struct sqlexd sqlstm;
- sqlstm.sqlvsn = 13;
- sqlstm.arrsiz = 4;
- sqlstm.sqladtp = &sqladt;
- sqlstm.sqltdsp = &sqltds;
- sqlstm.stmt = sq0007;
- sqlstm.iters = (unsigned int  )1;
- sqlstm.offset = (unsigned int  )143;
- sqlstm.selerr = (unsigned short)1;
- sqlstm.sqlpfmem = (unsigned int  )0;
- sqlstm.cud = sqlcud0;
- sqlstm.sqlest = (unsigned char  *)&sqlca;
- sqlstm.sqlety = (unsigned short)4352;
- sqlstm.occurs = (unsigned int  )0;
- sqlstm.sqcmod = (unsigned int )0;
- sqlcxt((void **)0, &sqlctx, &sqlstm, &sqlfpn);
-}
-
-
-	/* EXEC SQL WHENEVER NOT FOUND DO break; */ 
-
-
-
     //----------------------------
     // initialize memory 
     //----------------------------
@@ -1047,9 +1009,43 @@ int createreport( char *outfile)
     FILE *fp = NULL;
     if( strlen(outfile) > 1)
     {
-       FILE *fp = openfile( outfile, WRITE_MODE); 
+       fp = openfile( outfile, WRITE_MODE); 
        if( fp == NULL) return ERROR;
     }
+
+    //-------------------------------------------------
+    // declare cursor joining Student and Details table
+    //-------------------------------------------------
+    /* EXEC SQL DECLARE STDREPORT CURSOR FOR 
+    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
+    FROM STUDENT A, STUDENTDETAILS B 
+    WHERE A.STUDENTID = B.STUDENTID
+    ORDER BY A.STUDENTID, GRADE; */ 
+
+    /* EXEC SQL OPEN STDREPORT; */ 
+
+{
+    struct sqlexd sqlstm;
+    sqlstm.sqlvsn = 13;
+    sqlstm.arrsiz = 4;
+    sqlstm.sqladtp = &sqladt;
+    sqlstm.sqltdsp = &sqltds;
+    sqlstm.stmt = sq0007;
+    sqlstm.iters = (unsigned int  )1;
+    sqlstm.offset = (unsigned int  )143;
+    sqlstm.selerr = (unsigned short)1;
+    sqlstm.sqlpfmem = (unsigned int  )0;
+    sqlstm.cud = sqlcud0;
+    sqlstm.sqlest = (unsigned char  *)&sqlca;
+    sqlstm.sqlety = (unsigned short)4352;
+    sqlstm.occurs = (unsigned int  )0;
+    sqlstm.sqcmod = (unsigned int )0;
+    sqlcxt((void **)0, &sqlctx, &sqlstm, &sqlfpn);
+}
+
+
+	/* EXEC SQL WHENEVER NOT FOUND DO break; */ 
+
 
     //------------------------------------
     // process data

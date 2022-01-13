@@ -91,7 +91,7 @@ int errrpt( void )
 }
 
 //--------------------------------------------------
-// remove to remove extra spaces from string on left
+// code to remove extra spaces from string on left
 //-------------------------------------------------
 char *ltrim(char *inp)
 {
@@ -100,7 +100,7 @@ char *ltrim(char *inp)
 }
 
 //---------------------------------------------------
-// remove to remove extra spaces from string on right
+// code to remove extra spaces from string on right
 //---------------------------------------------------
 char *rtrim(char *inp)
 {
@@ -122,8 +122,7 @@ FILE * openfile( char *filename, char* MODE)
     FILE *fp = fopen(filename, MODE);
     if( fp == NULL)
     {
-        printf("\nUnable to open file.\n");
-        printf("\nPlease check whether file exists and you have read privilege.\n");
+        printf("\nUnable to open file %s, ", filename);
         return NULL; 
     }
     return fp; 
@@ -255,7 +254,7 @@ int readStudentid( char *filename)
         }
 
         //---------------------------------
-        // each recod should have 3 fields
+        // each record should have 3 fields
         //--------------------------------
         if( i < 3)
         {
@@ -278,7 +277,7 @@ int readStudentid( char *filename)
          }
 
         //--------------------------------------------
-        // check for valid length
+        // check for numeric and valid length
         //--------------------------------------------
         if( validateStudentid(student[0], count) == ERROR) 
         {
@@ -292,8 +291,6 @@ int readStudentid( char *filename)
         strcpy( firstname,student[1] );
         strcpy( lastname,student[2] );
         studentid = atoi(student[0]); 
-       
-
 
         //---------------------------------------------
         // check if record already exists
@@ -311,7 +308,6 @@ int readStudentid( char *filename)
         }
         else
         {
-		
             printf("\nINFO: Duplicate StudentID Record in Row %d for StudentID %d in table STUDENT", count,studentid );
         }
     }
@@ -325,6 +321,7 @@ int readStudentid( char *filename)
     }
 
 //----------------return-----------------------------------
+if( fp!= NULL) fclose(fp);
 return 0;     
 
 ERRORLOC:
@@ -400,7 +397,7 @@ int readStudentDetails( char *filename)
         }
 
         //---------------------------------
-        // each recod should have 3 fields
+        // each recod should have 4 fields
         //--------------------------------
         if( i < 4)
         {
@@ -423,7 +420,7 @@ int readStudentDetails( char *filename)
          }
 
         //---------------------------------------------
-        // check if record already exists
+        // validate input data
         //--------------------------------------------
         studentid = atoi(student[0]);
         grade =  atoi(student[1]);
@@ -439,9 +436,9 @@ int readStudentDetails( char *filename)
         //--------------------------------------------
         EXEC SQL SELECT COUNT(*) INTO :reccount FROM STUDENTDETAILS  WHERE STUDENTID = :studentid AND GRADE = :grade ;
 
-        //-------------------------------------
-        // validate and insert to table
-        //-------------------------------------
+        //-----------------------------------------
+        // insert to table if record does not exist
+        //-----------------------------------------
         if( reccount == 0)
         {
            insertedreccount++;
@@ -450,7 +447,6 @@ int readStudentDetails( char *filename)
         }
         else
         {
-		
             printf("\nINFO: Duplicate Student Detail Record in Row %d for StudentID %d,%d", count,studentid,grade  );
         }
 
@@ -465,6 +461,7 @@ int readStudentDetails( char *filename)
         goto ERRORLOC;
  }
 //----------------------------------return--------------------------------------------
+if( fp!= NULL) fclose(fp);
 return 0;     
 
 ERRORLOC:
@@ -488,18 +485,6 @@ ERRORLOC:
 int createreport( char *outfile)
 {
 
-    //-------------------------------------------------
-    // declare cursor joining Student and Details table
-    //-------------------------------------------------
-    EXEC SQL DECLARE STDREPORT CURSOR FOR 
-    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
-    FROM STUDENT A, STUDENTDETAILS B 
-    WHERE A.STUDENTID = B.STUDENTID
-    ORDER BY A.STUDENTID, GRADE;
-	EXEC SQL OPEN STDREPORT;
-	EXEC SQL WHENEVER NOT FOUND DO break;
-
-
     //----------------------------
     // initialize memory 
     //----------------------------
@@ -517,9 +502,20 @@ int createreport( char *outfile)
     FILE *fp = NULL;
     if( strlen(outfile) > 1)
     {
-       FILE *fp = openfile( outfile, WRITE_MODE); 
+       fp = openfile( outfile, WRITE_MODE); 
        if( fp == NULL) return ERROR;
     }
+
+    //-------------------------------------------------
+    // declare cursor joining Student and Details table
+    //-------------------------------------------------
+    EXEC SQL DECLARE STDREPORT CURSOR FOR 
+    SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
+    FROM STUDENT A, STUDENTDETAILS B 
+    WHERE A.STUDENTID = B.STUDENTID
+    ORDER BY A.STUDENTID, GRADE;
+    EXEC SQL OPEN STDREPORT;
+	EXEC SQL WHENEVER NOT FOUND DO break;
 
     //------------------------------------
     // process data

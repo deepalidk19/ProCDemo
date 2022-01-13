@@ -119,6 +119,7 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
 #Improvements that can be made
 1. Delimiter should be made configurable
 2. More validations for firstname/lastname (include not allowed character list)
+3. For duplicate records, update the record with the latest entry in input file
 
 
 
