@@ -1,4 +1,5 @@
-#pragma warning(disable : 4996)
+#pragma warning(disable : 4996) /* pragma to supress warning for using scanf */
+/* TODO: check and remove this section */
 exec sql begin declare section;
 char user_name[20],password[20];
 exec sql end declare section;
@@ -8,6 +9,7 @@ exec sql include sqlca;
 #include<stdlib.h>
 #include <string.h>
 #include <ctype.h>
+/* TODO: Remove */
 /*system/or@cl321c*/
 
 
@@ -25,15 +27,15 @@ struct student_details
 { 
     int      studentid; 
     char     firstname[50];
-    int      grade; 
+    int      grade; /* TODO: Make grade char[1] to store 'A', 'B' etc. */
     float    gpa;
     int      year;
 }; 
 struct student_details *student_rec_ptr; 
 char data[50];
 
-char firstname[100];
-char lastname[100];
+char firstname[100]; /* TODO: Match char size declared in struct */
+char lastname[100]; /* TODO: Remove if not used */
 int studentid; 
 int reccount;
 int grade; 
@@ -46,10 +48,10 @@ EXEC SQL END DECLARE SECTION;
 //-------------------------------------------------
 
 int errrpt( void )
-   {
+{
    printf("%.70s (%d)\n", sqlca.sqlerrm.sqlerrmc, -sqlca.sqlcode);
    return(0);
-   }
+}
 
 char *ltrim(char *s)
 {
@@ -123,6 +125,7 @@ int readStudentid( char *filename)
         //--------------------------------
         if( i < 2)
         {
+		/* TODO: Update message to match validation check */
                printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
                return ERROR;
         }
@@ -134,6 +137,7 @@ int readStudentid( char *filename)
          {
             if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
             {
+	    	/* TODO: Update error message to say empty instead of NULL */
                printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
                return ERROR;
             }
@@ -158,6 +162,7 @@ int readStudentid( char *filename)
         }
         else
         {
+		/* TODO: Indicate which table has the duplicate row */
             printf("\nINFO: Duplicate Record in Row %d for StudentID %d", count,studentid );
         }
 
@@ -224,6 +229,7 @@ int readStudentDetails( char *filename)
         //--------------------------------
         if( i < 4)
         {
+		/* TODO: Match error message to validation */
                printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
                return ERROR;
         }
@@ -235,6 +241,7 @@ int readStudentDetails( char *filename)
          {
             if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
             {
+	    	/* TODO: Update error message to indicate empty value instead of NULL */
                printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
                return ERROR;
             }
@@ -259,6 +266,7 @@ int readStudentDetails( char *filename)
         }
         else
         {
+		/* TODO: Indicate which table has the duplicate row */
             printf("\nINFO: Duplicate Record in Row %d for StudentID %d,%d", count,studentid,grade  );
         }
 
@@ -303,6 +311,8 @@ int createreport( char *outfile)
     if( fp == NULL)
     {
         printf("Unable to open file.\n");
+	/* TODO: Should a check be added to see if we have write privilege? */
+	/* TODO: Do we expect the output file to exist? Or should we create one? */
         printf("Please check whether file exists and you have read privilege.\n");
         return ERROR; 
     }
@@ -358,8 +368,8 @@ int main () {
     char filename1[100];
 
     //-------------------------------------
-	// login to database
-	//-------------------------------------
+    // login to database
+    //-------------------------------------
     EXEC SQL WHENEVER SQLERROR GOTO errexit;
     if( dblogin() != SUCCESS) { goto errexit; }
 
@@ -367,6 +377,7 @@ int main () {
     //-----------------------------------------------
     // read studentID information into table STUDENT
     //-----------------------------------------------
+    /* TODO: Accept input file name from arguments */
     strcpy( filename1, "C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\input1.dat");
     int ret = readStudentid( filename1);
     if( ret != 0 )
@@ -378,6 +389,7 @@ int main () {
     //----------------------------------------------
     // read student details to table STUDENTDETAILS
     //----------------------------------------------
+    /* TODO: Accept input file name from arguments */
     strcpy( filename1, "C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\input2.dat");
     ret = readStudentDetails( filename1);
     if( ret != 0 )
@@ -390,6 +402,7 @@ int main () {
     //-----------------------------------------------
     // get consolidated report
     //-----------------------------------------------
+    /* TODO: Accept output file name from arguments */
     ret = createreport("C:\\Users\\deepa\\OneDrive\\Documents\\c-code\\ProC\\output.dat"); 
 
 
@@ -403,7 +416,6 @@ int main () {
 //----------------------------
 printf("\n Processing successfully completed.\n\n");
 EXEC SQL COMMIT WORK RELEASE; 
-//_getch();
 exit(EXIT_SUCCESS); 
 
 errexit:
