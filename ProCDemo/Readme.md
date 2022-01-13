@@ -40,41 +40,41 @@ GPA       Float
 Student Master file, csv file
 Format: StudentID, FirstName, LastName
 -----------------------------------------------
-1001,Paul,Smith
+1005,Sharon,Wang
 1002,Tim,Harker
 1003,Rose,Peterson
+1001,Paul,Smith
 1004,Sharon,Peterson
-1005,Sharon,Wang
 -----------------------------------------------
 Student Grade details file, csv file
 Format: StudentID, Grade, Year, GPA
 -----------------------------------------------
-1001,12,2020,4.0
-1001,11,2021,3.0
 1001,10,2019,3.0
 1001,9,2018,3.0
 1002,12,2020,4.0
-1002,11,2021,3.0
-1002,10,2019,3.0
 1002,9,2018,3.0
 1003,12,2020,4.0
 1003,11,2021,3.0
 1003,10,2019,3.0
 1003,9,2018,3.0
+1002,11,2021,3.0
+1002,10,2019,3.0
+1001,12,2020,4.0
+1001,11,2021,3.0
 ----------------------------------------------
 Output
- 1001,Paul, 9, 3.000000, 2018
- 1001,Paul, 10, 3.000000, 2019
- 1001,Paul, 11, 3.000000, 2021
- 1001,Paul, 12, 4.000000, 2020
- 1002,Tim, 9, 3.000000, 2018
- 1002,Tim, 10, 3.000000, 2019
- 1002,Tim, 11, 3.000000, 2021
- 1002,Tim, 12, 4.000000, 2020
- 1003,Rose, 9, 3.000000, 2018
- 1003,Rose, 10, 3.000000, 2019
- 1003,Rose, 11, 3.000000, 2021
- 1003,Rose, 12, 4.000000, 2020
+1001,Paul,9,3.000000,2018
+1001,Paul,10,3.000000,2019
+1001,Paul,11,3.000000,2021
+1001,Paul,12,4.000000,2020
+1002,Tim,9,3.000000,2018
+1002,Tim,10,3.000000,2019
+1002,Tim,11,3.000000,2021
+1002,Tim,12,4.000000,2020
+1003,Rose,9,3.000000,2018
+1003,Rose,10,3.000000,2019
+1003,Rose,11,3.000000,2021
+1003,Rose,12,4.000000,2020
 ----------------------------------------------
 ```
 
@@ -116,7 +116,7 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
    Detail file: StudentId, Grade is the key for duplicate validation
 5. Firstname/lastname strlen > 100: code fails with error
 
-#Improvements that can be made
+# Improvements that can be made
 1. Delimiter should be made configurable
 2. More validations for firstname/lastname (include not allowed character list)
 3. For duplicate records, update the record with the latest entry in input file
