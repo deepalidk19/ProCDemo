@@ -98,12 +98,12 @@ Output
 Output will be written to report.dat:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDemo\student.dat C:\Users\ProCDemo\details.dat C:\Users\ProCDemo\report.dat
 Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDemo\student.dat C:\Users\ProCDemo\details.dat C:\Users\ProCDemo\report.dat
 ```
-#Input validations
+# Input validations
 1. StudentId should be numeric
-1. Each entry in Student file should have atleast three parameters
+1. Each entry in Student file should have at least three parameters
 2. Year between 2020-2050
 3. GPA between 1-4
-4  Grade between 9-12 ( high school!)
+4. Grade between 9-12 ( high school!)
 5. No validations for firstname and lastname other than strlen
 
 # Test cases considered, implemented, tested manually. 
@@ -112,9 +112,13 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
 3. Invalid data input file ( E.g. Studentid, firstname): code fails with error
 4. Empty input file: code fails with error
 5. Duplicates in input file ( code disregards duplicates)
+   
    Student file: Student ID is the key for duplicate validation
+   
    Detail file: StudentId, Grade is the key for duplicate validation
 5. Firstname/lastname strlen > 100: code fails with error
+6. Tested with duplicate entries: code continues processing
+7. Tested with invalid entries: code fails with error
 
 # Improvements that can be made
 1. Delimiter should be made configurable
