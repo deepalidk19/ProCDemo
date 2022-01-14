@@ -66,7 +66,7 @@ struct student_details
     float    gpa;
     int      year;
 }; 
-struct student_details *student_record; 
+struct student_details *student_record = NULL; 
 
 char firstname[100]; 
 char lastname[100]; 
@@ -503,7 +503,7 @@ int createreport( char *outfile)
     if( strlen(outfile) > 1)
     {
        fp = openfile( outfile, WRITE_MODE); 
-       if( fp == NULL) return ERROR;
+       if( fp == NULL) { goto ERRORLOC;}
     }
 
     //-------------------------------------------------
@@ -540,6 +540,7 @@ int createreport( char *outfile)
     // close file, close cursor and return
     //--------------------------------------
     if( fp != NULL ) fclose(fp);
+    if( student_record != NULL ) free( student_record);
     EXEC SQL CLOSE STDREPORT; 
 
 
@@ -547,6 +548,7 @@ int createreport( char *outfile)
 return 0;     
 
 ERRORLOC:
+    if( student_record != NULL ) free( student_record);
     if( fp!= NULL) fclose(fp);
     return ERROR;
 
@@ -564,7 +566,6 @@ int dblogin()
     // this line should not be commented for test
     //--------------------------------------------
     //getlogindetails();  
-
 
     //-----------------------------------
     // login
