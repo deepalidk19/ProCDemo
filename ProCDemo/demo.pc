@@ -86,8 +86,16 @@ EXEC SQL END DECLARE SECTION;
 //-------------------------------------
 int errrpt( void )
 {
-   printf("%.70s (%d)\n", sqlca.sqlerrm.sqlerrmc, -sqlca.sqlcode);
+   printf("\n%.70s (%d)\n", sqlca.sqlerrm.sqlerrmc, -sqlca.sqlcode);
    return(0);
+}
+
+int oraerrexit()
+{
+   errrpt();
+   EXEC SQL WHENEVER SQLERROR CONTINUE;
+   EXEC SQL ROLLBACK WORK RELEASE;
+   return 1;
 }
 
 //--------------------------------------------------
@@ -221,6 +229,7 @@ int readStudentid( char *filename)
     //------------------------------------------
     // delete data from Student table 
     //------------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
     EXEC SQL DELETE FROM STUDENT;
 
     //------------------------------------------------------
@@ -327,6 +336,12 @@ return 0;
 ERRORLOC:
     if( fp!= NULL) fclose(fp);
     return ERROR;
+
+ERRORORA:
+   oraerrexit();
+   if( fp!= NULL) fclose(fp);
+   return ERROR;
+   
     
 
 }
@@ -364,6 +379,7 @@ int readStudentDetails( char *filename)
     //------------------------------------------
     // truncate existing data from table
     //------------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
     EXEC SQL DELETE FROM STUDENTDETAILS;
 
     //------------------------------------------------------
@@ -468,6 +484,11 @@ ERRORLOC:
     if( fp!= NULL) fclose(fp);
     return ERROR;
 
+ERRORORA:
+   oraerrexit();
+   if( fp!= NULL) fclose(fp);
+   return ERROR;
+
 }
 
 //--------------------------------------------------
@@ -509,6 +530,7 @@ int createreport( char *outfile)
     //-------------------------------------------------
     // declare cursor joining Student and Details table
     //-------------------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
     EXEC SQL DECLARE STDREPORT CURSOR FOR 
     SELECT A.STUDENTID, FIRSTNAME, GRADE, GPA, YEAR
     FROM STUDENT A, STUDENTDETAILS B 
@@ -552,6 +574,11 @@ ERRORLOC:
     if( fp!= NULL) fclose(fp);
     return ERROR;
 
+ERRORORA:
+   oraerrexit();
+   if( fp!= NULL) fclose(fp);
+   return ERROR;
+
 
 }
 
@@ -578,6 +605,13 @@ int dblogin()
 		printf("Error code:%d\nError message:%s",sqlca.sqlcode,sqlca.sqlerrm.sqlerrmc);
         return ERROR; 
 	}
+
+//----------------------------------return--------------------------------------------
+return 0;     
+
+ERRORORA:
+   errrpt();
+   return ERROR;
 
 }
 
@@ -623,10 +657,7 @@ int main (int argc, char *argv[]) {
     //-------------------------------------
     // login to database
     //-------------------------------------
-    EXEC SQL WHENEVER SQLERROR GOTO errexit;
-    if( dblogin() != SUCCESS) { goto errexit; }
-
-
+    if( dblogin() != SUCCESS) { goto CLEANUPERR; }
 
     //-----------------------------------------------
     // read studentID information into table STUDENT
@@ -634,7 +665,7 @@ int main (int argc, char *argv[]) {
     int ret = readStudentid( inputfile1);
     if( ret != 0 )
     {
-        goto CLEANUP; 
+        goto CLEANUPERR; 
     }
     
 
@@ -644,13 +675,17 @@ int main (int argc, char *argv[]) {
     ret = readStudentDetails( inputfile2);
     if( ret != 0 )
     {
-        goto CLEANUP; 
+        goto CLEANUPERR; 
     }
 
     //-----------------------------------------------
     // get consolidated report
     //-----------------------------------------------
     ret = createreport(outputfile);
+    if( ret != 0 )
+    {
+        goto CLEANUPERR; 
+    }
 
     //------------------------------------------
     // commit data in db
@@ -659,16 +694,18 @@ int main (int argc, char *argv[]) {
 
 
 //----------------------------
-// close
+// return
 //----------------------------
-CLEANUP:
 printf("\nProcessing completed.\n\n");
 exit(EXIT_SUCCESS); 
 
-errexit:
+CLEANUPERR:
+printf("\nProcessing completed. Please check error.\n\n");
+exit(ERROR); 
+
+ERRORORA:
    errrpt();
-   EXEC SQL WHENEVER SQLERROR CONTINUE;
-   EXEC SQL ROLLBACK WORK RELEASE;
-   return 1;
+   return ERROR;
+
 	
 }
