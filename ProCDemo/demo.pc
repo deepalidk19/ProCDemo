@@ -47,10 +47,18 @@ exec sql include sqlca;
 #define DELIMITER ","
 #define ERROR -1
 #define SUCCESS 0
+#define SAME    0
 #define READ_MODE "r"
 #define WRITE_MODE "w"
 #define FILE_LENGTH 200
 #define INT_MAX_STR "2147483647"
+#define CHECKRET( ret) \
+   if(ret != 0) \
+   { \
+      goto CLEANUPERR; \
+   }                      
+
+
 
 //-----------------------------------------------
 // DECLARE SQL variables
@@ -96,6 +104,22 @@ int oraerrexit()
    EXEC SQL WHENEVER SQLERROR CONTINUE;
    EXEC SQL ROLLBACK WORK RELEASE;
    return 1;
+}
+//-------------------------------------
+// print usage
+//-------------------------------------
+void print_usage()
+{
+   printf("\nUsage:");
+   printf("\nRequired parameters: ");
+   printf("\n StudentFile -  comma delimited file containing student details ");
+   printf("\n GradeFile   -  comma delimited file containing student grade details ");
+   printf("\nOptional parameter: ");
+   printf("\n OutputFile  -  File for output ");
+   printf("\n             -  If not provided, output will be sent to stdout ");
+   printf("\n e.g. ");
+   printf("\n ProCDemo.exe  /path/studentfile /path/studentdetailsfile ");
+   exit(0);
 }
 
 //--------------------------------------------------
@@ -257,7 +281,7 @@ int readStudentid( char *filename)
         token = strtok(dataBuffer, DELIMITER);   
         while( token != NULL && i < 3) 
         {
-           strncpy( student[i], token, 200 );
+           strncpy( student[i], ltrim(rtrim(token)), 200 );
            i++;
            token = strtok(NULL, DELIMITER);
         }
@@ -267,22 +291,20 @@ int readStudentid( char *filename)
         //--------------------------------
         if( i < 3)
         {
-
-               printf("\nERROR: Please validate data in row %d of input file. Incorrect number of parameters for record. ", count);
-               goto ERRORLOC;
+           printf("\nERROR: Please validate data in row %d of input file. Incorrect number of parameters for record. ", count);
+           goto ERRORLOC;
         }
 
         //--------------------------------------------
         // check if any of the values are null
         //--------------------------------------------
          for( int i = 0; i < 3; i++)
-         {
+         {            
             if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
             {
                printf("\nERROR: Please validate data in row %d of input file. Empty values not allowed", count);
                goto ERRORLOC;
             }
-
          }
 
         //--------------------------------------------
@@ -290,12 +312,12 @@ int readStudentid( char *filename)
         //--------------------------------------------
         if( validateStudentid(student[0], count) == ERROR) 
         {
-            goto ERRORLOC;
+           goto ERRORLOC;
         }
         if( strlen(student[1]) > 100 || strlen(student[2]) > 100) 
         {
-            printf("\nERROR: Please validate data in row %d of input file. FirstName, LastName should be less than 100 charaters", count);
-            goto ERRORLOC;
+           printf("\nERROR: Please validate data in row %d of input file. FirstName, LastName should be less than 100 charaters", count);
+           goto ERRORLOC;
         }
         strcpy( firstname,student[1] );
         strcpy( lastname,student[2] );
@@ -313,7 +335,7 @@ int readStudentid( char *filename)
         {
            printf("\n %d) Record being inserted to Student table", count);
            insertedreccount++;
-           EXEC SQL INSERT INTO STUDENT(STUDENTID,FIRSTNAME,LASTNAME) VALUES ( trim(:studentid),trim(:firstname),trim(:lastname));
+           EXEC SQL INSERT INTO STUDENT(STUDENTID,FIRSTNAME,LASTNAME) VALUES (:studentid,:firstname,:lastname);
         }
         else
         {
@@ -407,7 +429,7 @@ int readStudentDetails( char *filename)
         token = strtok(dataBuffer, DELIMITER);   
         while( token != NULL && i < 4) 
         {
-           strcpy( student[i], token );
+           strcpy( student[i], ltrim(rtrim(token)) );
            i++;
            token = strtok(NULL, DELIMITER);
         }
@@ -593,6 +615,8 @@ int dblogin()
     // this line should not be commented for test
     //--------------------------------------------
     //getlogindetails();  
+    strcpy(user_name, "system");
+	strcpy(password, "or@cl321c");
 
     //-----------------------------------
     // login
@@ -615,12 +639,22 @@ ERRORORA:
 
 }
 
-
-
-//----------------------------------------------
+//-----------------------------------------------------------------
 // Main routine
-//----------------------------------------------
-int main (int argc, char *argv[]) {
+// 
+// Processing: 
+// - DB login
+// - Get input parmeters
+// - Read student file
+// - Read Student grade file
+// - Generate output
+// - Exit
+//-----------------------------------------------------------------
+int main (int argc, char *argv[]) 
+{
+    char inputfile1[FILE_LENGTH];
+    char inputfile2[FILE_LENGTH];
+    char outputfile[FILE_LENGTH];
 
     //-------------------------------------------------------------
     // check input arguments
@@ -631,16 +665,9 @@ int main (int argc, char *argv[]) {
     //--------------------------------------------------------------
     if( argc < 3)
     {
-        printf("\nERROR: Input files not provided");
-        printf("\nRequired parameters: ");
-        printf("\n StudentFile - csv file containing student details ");
-        printf("\n GradeFile   - csv file containing student grade details ");
-        exit(0);
+      print_usage(); 
     }
 
-    char inputfile1[FILE_LENGTH];
-    char inputfile2[FILE_LENGTH];
-    char outputfile[FILE_LENGTH];
     strncpy( inputfile1, argv[1], FILE_LENGTH);
     strncpy( inputfile2, argv[2], FILE_LENGTH);
 
@@ -662,30 +689,17 @@ int main (int argc, char *argv[]) {
     //-----------------------------------------------
     // read studentID information into table STUDENT
     //-----------------------------------------------
-    int ret = readStudentid( inputfile1);
-    if( ret != 0 )
-    {
-        goto CLEANUPERR; 
-    }
-    
+    CHECKRET( readStudentid( inputfile1));
 
     //----------------------------------------------
     // read student details to table STUDENTDETAILS
     //----------------------------------------------
-    ret = readStudentDetails( inputfile2);
-    if( ret != 0 )
-    {
-        goto CLEANUPERR; 
-    }
+    CHECKRET( readStudentDetails( inputfile2));
 
     //-----------------------------------------------
     // get consolidated report
     //-----------------------------------------------
-    ret = createreport(outputfile);
-    if( ret != 0 )
-    {
-        goto CLEANUPERR; 
-    }
+    CHECKRET( createreport(outputfile));
 
     //------------------------------------------
     // commit data in db
