@@ -56,7 +56,20 @@ exec sql include sqlca;
    if(ret != 0) \
    { \
       goto CLEANUPERR; \
-   }                      
+   }   
+#define CHECKNULL( ret) \
+   if(ret == NULL) \
+   { \
+      printf("\nERROR: NULL value at Line Number %s->%s:%d\n", __FILE__, __FUNCTION__, __LINE__);\
+      goto CLEANUPERR; \
+   } 
+
+#define FREEOBJ( obj) \
+   { \
+      free(obj); \
+      obj=NULL; \
+   }
+   
 
 
 
@@ -254,7 +267,9 @@ int readStudentid( char *filename)
     // delete data from Student table 
     //------------------------------------------
     EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
+    EXEC SQL DELETE FROM STUDENTDETAILS;
     EXEC SQL DELETE FROM STUDENT;
+
 
     //------------------------------------------------------
     // Read each record in input file and load to DB table
@@ -398,15 +413,10 @@ int readStudentDetails( char *filename)
     FILE *fp = openfile( filename, READ_MODE); 
     if( fp == NULL) return ERROR;
 
-    //------------------------------------------
-    // truncate existing data from table
-    //------------------------------------------
-    EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
-    EXEC SQL DELETE FROM STUDENTDETAILS;
-
     //------------------------------------------------------
     // Read each record in input file and load to DB table
     //------------------------------------------------------
+    EXEC SQL WHENEVER SQLERROR GOTO ERRORORA;
     while (fgets(dataBuffer,1000, fp)!=NULL)
     {    
     
@@ -584,7 +594,7 @@ int createreport( char *outfile)
     // close file, close cursor and return
     //--------------------------------------
     if( fp != NULL ) fclose(fp);
-    if( student_record != NULL ) free( student_record);
+    if( student_record != NULL ) FREEOBJ( student_record);
     EXEC SQL CLOSE STDREPORT; 
 
 
@@ -592,7 +602,7 @@ int createreport( char *outfile)
 return 0;     
 
 ERRORLOC:
-    if( student_record != NULL ) free( student_record);
+    if( student_record != NULL ) FREEOBJ( student_record);
     if( fp!= NULL) fclose(fp);
     return ERROR;
 
@@ -615,6 +625,8 @@ int dblogin()
     // this line should not be commented for test
     //--------------------------------------------
     //getlogindetails();  
+    	strcpy(user_name, "system");
+	strcpy(password, "or@cl321c");
 
     //-----------------------------------
     // login
@@ -650,9 +662,10 @@ ERRORORA:
 //-----------------------------------------------------------------
 int main (int argc, char *argv[]) 
 {
-    char inputfile1[FILE_LENGTH];
-    char inputfile2[FILE_LENGTH];
-    char outputfile[FILE_LENGTH];
+    char* inputfile1 = NULL;
+    char* inputfile2 = NULL;
+    char* outputfile = NULL;
+
 
     //-------------------------------------------------------------
     // check input arguments
@@ -666,17 +679,19 @@ int main (int argc, char *argv[])
       print_usage(); 
     }
 
-    strncpy( inputfile1, argv[1], FILE_LENGTH);
-    strncpy( inputfile2, argv[2], FILE_LENGTH);
+    
+    inputfile1 = strdup(argv[1]); CHECKNULL(inputfile1);
+    inputfile2 = strdup(argv[2]); CHECKNULL(inputfile2);
 
     if( argc == 4)
     { 
-       strncpy( outputfile, argv[3],FILE_LENGTH);
+        outputfile = strdup(argv[3]);
     }
     else 
     { 
-       strcpy( outputfile, "");
+        outputfile = strdup("");
     }
+    CHECKNULL(outputfile);
    
     
     //-------------------------------------
@@ -708,6 +723,7 @@ int main (int argc, char *argv[])
 //----------------------------
 // return
 //----------------------------
+CHECKNULL(inputfile1);CHECKNULL(inputfile2);CHECKNULL(outputfile);
 printf("\nProcessing completed.\n\n");
 exit(EXIT_SUCCESS); 
 

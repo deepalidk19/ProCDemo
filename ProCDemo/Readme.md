@@ -18,18 +18,18 @@
 //----------------------------------------------
 create table student
 (
-studentid Integer,
-firstname varchar2(100),
-lastname varchar2(100)
+studentid Integer NOT NULL,
+firstname varchar2(100) NOT NULL,
+lastname varchar2(100) NOT NULL,
+PRIMARY KEY (studentid)
 );
-
 create table studentdetails
 (
-studentid Integer,
+studentid Integer references student(studentid),
 Grade     Integer, 
 Year      Integer, 
 GPA       Float
-);     
+);      
 ```
 
 # Input files definition
@@ -125,6 +125,7 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
 2. More validations for firstname/lastname (include not allowed character list)
 3. For duplicate records, update the record with the latest entry in input file
 4. Add more validations for gpa,grade,year ( numeric, range)
+5. Write a separate test script to validate the functionality. 
 
 
 
