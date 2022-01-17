@@ -1,9 +1,9 @@
 # Introduction
 
-- This code is a demonstration of the use of C, ProC to interact with Oracle Database.
-- It consists of 2 tables, a C based program to read 2 delimiter separated files and ProC
+- This code is a demonstration of the use of C and ProC to interact with an Oracle Database.
+- It consists of 2 database tables, a C based program to read 2 delimiter separated files and ProC
   to insert data from the files into the tables and use PL/SQL to output data from the 
-  tables as table joins and output to a file.
+  tables using joins and output the results to a file.
 
 # Tools and technologies used
 
@@ -80,7 +80,7 @@ Output
 
 # Hacking
 - Clone this repository
-- Install the required tools namely Oracle DB with ProC support
+- Install the Oracle DB with ProC support
 - Visual C++ or similar C compiler tools
 - Compile the `demo.pc` using the ProC tool command: `proc demo.pc`. This will produce a C source file `demo.c`.
 - Compile the C file using the C compiler or Visual C++
@@ -96,22 +96,22 @@ Output
 ## Execution example:     
 ```
 Output will be written to report.dat:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDemo\student.dat C:\Users\ProCDemo\details.dat C:\Users\ProCDemo\report.dat
-Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDemo\student.dat C:\Users\ProCDemo\details.dat C:\Users\ProCDemo\report.dat
+Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDemo\student.dat C:\Users\ProCDemo\details.dat
 ```
 # Input validations
 1. StudentId should be numeric
 1. Each entry in Student file should have at least three parameters
 2. Year between 2020-2050
 3. GPA between 1-4
-4. Grade between 9-12 ( high school!)
+4. Grade between 9-12 (high school!)
 5. No validations for firstname and lastname other than strlen
 
 # Test cases considered, implemented, tested manually. 
 1. Input paramters not provided: code fails with error
-2. Partial input provided ( one file ): code fails with error
-3. Invalid data input file ( E.g. Studentid, firstname): code fails with error
+2. Partial input provided (one file): code fails with error
+3. Invalid data input file (e.g. Studentid, firstname): code fails with error
 4. Empty input file: code fails with error
-5. Duplicates in input file ( code disregards duplicates)
+5. Duplicates in input file (code disregards duplicates)
    
    Student file: Student ID is the key for duplicate validation
    
@@ -124,7 +124,7 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
 1. Delimiter should be made configurable
 2. More validations for firstname/lastname (include not allowed character list)
 3. For duplicate records, update the record with the latest entry in input file
-4. Add more validations for gpa,grade,year ( numeric, range)
+4. Add more validations for gpa,grade,year (numeric, range)
 5. Write a separate test script to validate the functionality. 
 
 
