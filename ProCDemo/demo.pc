@@ -638,8 +638,7 @@ int dblogin()
     // this line should not be commented for test
     //--------------------------------------------
     //getlogindetails();  
-    	strcpy(user_name, "system");
-	strcpy(password, "or@cl321c");
+
     //-----------------------------------
     // login
     //-----------------------------------
