@@ -178,9 +178,16 @@ FILE * openfile( char *filename, char* MODE)
     return fp; 
 }
 
-//---------------------------------------
+//------------------------------------------
 // check for null/empty data
-//---------------------------------------
+// Input: 
+// Student   : Student array
+// Cols      : Number of columns
+// count     : Record count in file
+// Return: 
+// ERROR:   if any of the values are NULL
+// SUCCESS: when all values are non NULL 
+//------------------------------------------
 int checkforNULL( char student[][STR_MAX], int cols, int count)
 {
    for( int i = 0; i < cols; i++)
@@ -196,7 +203,9 @@ int checkforNULL( char student[][STR_MAX], int cols, int count)
 }
 
 //---------------------------------------------------
-// validat studentid parameter
+// validate studentid parameter
+// Studentid   : Student id to be validated
+// count       : Record count in file
 //--------------------------------------------------
 int validateStudentid( char* studentid, int count)
 {
@@ -226,7 +235,7 @@ int validateStudentid( char* studentid, int count)
 }
 
 //---------------------------------------------------
-// validat input parameters
+// validate input parameters
 //--------------------------------------------------
 int validateInput( char *studentid, int year, float gpa, int grade, int count )
 {
