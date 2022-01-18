@@ -48,6 +48,11 @@ exec sql include sqlca;
 #define ERROR -1
 #define SUCCESS 0
 #define SAME    0
+#define STUDENT_COLS    3
+#define DETAILS_COLS    4
+#define STR_MAX        200
+#define YEAR_START     2010
+#define YEAR_END       2050
 #define READ_MODE "r"
 #define WRITE_MODE "w"
 #define FILE_LENGTH 200
@@ -173,6 +178,23 @@ FILE * openfile( char *filename, char* MODE)
     return fp; 
 }
 
+//---------------------------------------
+// check for null/empty data
+//---------------------------------------
+int checkforNULL( char student[][STR_MAX], int cols, int count)
+{
+   for( int i = 0; i < cols; i++)
+   {
+      if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
+      {
+         printf("\nERROR#: Please validate data in row %d of input file. NULL values not allowed", count);
+         return ERROR;
+      }
+
+   }
+   return SUCCESS;
+}
+
 //---------------------------------------------------
 // validat studentid parameter
 //--------------------------------------------------
@@ -212,7 +234,7 @@ int validateInput( char *studentid, int year, float gpa, int grade, int count )
         {
             return ERROR;
         }
-        if ( year < 2010 || year > 2050)
+        if ( year < YEAR_START || year > YEAR_END)
         {
             printf("\nERROR: Invalid year in row %d. Please validate data", count);
             return ERROR;
@@ -251,7 +273,7 @@ int validateInput( char *studentid, int year, float gpa, int grade, int count )
 int readStudentid( char *filename)
 {
      char dataBuffer[1000];
-     char student[3][200];
+     char student[STUDENT_COLS][STR_MAX];
      char *token;
      int count = 0;
      int insertedreccount = 0;
@@ -285,7 +307,7 @@ int readStudentid( char *filename)
         //----------------------------------------
         // set all values to NULL
         //----------------------------------------
-        for( int i = 0; i < 3; i++)
+        for( int i = 0; i < STUDENT_COLS; i++)
          strcpy(student[i], "");
 
 
@@ -294,9 +316,9 @@ int readStudentid( char *filename)
         //-------------------------------------
         i = 0; 
         token = strtok(dataBuffer, DELIMITER);   
-        while( token != NULL && i < 3) 
+        while( token != NULL && i < STUDENT_COLS) 
         {
-           strncpy( student[i], ltrim(rtrim(token)), 200 );
+           strncpy( student[i], ltrim(rtrim(token)), STR_MAX );
            i++;
            token = strtok(NULL, DELIMITER);
         }
@@ -304,7 +326,7 @@ int readStudentid( char *filename)
         //---------------------------------
         // each record should have 3 fields
         //--------------------------------
-        if( i < 3)
+        if( i < STUDENT_COLS)
         {
            printf("\nERROR: Please validate data in row %d of input file. Incorrect number of parameters for record. ", count);
            goto ERRORLOC;
@@ -313,14 +335,10 @@ int readStudentid( char *filename)
         //--------------------------------------------
         // check if any of the values are null
         //--------------------------------------------
-         for( int i = 0; i < 3; i++)
-         {            
-            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
-            {
-               printf("\nERROR: Please validate data in row %d of input file. Empty values not allowed", count);
-               goto ERRORLOC;
-            }
-         }
+        if( checkforNULL( student, STUDENT_COLS, count) == ERROR)
+        {
+           goto ERRORLOC;
+        }
 
         //--------------------------------------------
         // check for numeric and valid length
@@ -401,7 +419,7 @@ ERRORORA:
 int readStudentDetails( char *filename)
 {
      char dataBuffer[1000];
-     char student[4][100];
+     char student[DETAILS_COLS][STR_MAX];
      char *token;
      int count = 0;
      int i = 0;
@@ -437,9 +455,9 @@ int readStudentDetails( char *filename)
         //-------------------------------------
         i = 0; 
         token = strtok(dataBuffer, DELIMITER);   
-        while( token != NULL && i < 4) 
+        while( token != NULL && i < DETAILS_COLS) 
         {
-           strcpy( student[i], ltrim(rtrim(token)) );
+           strncpy( student[i], ltrim(rtrim(token)), STR_MAX );
            i++;
            token = strtok(NULL, DELIMITER);
         }
@@ -447,7 +465,7 @@ int readStudentDetails( char *filename)
         //---------------------------------
         // each recod should have 4 fields
         //--------------------------------
-        if( i < 4)
+        if( i < DETAILS_COLS)
         {
 		
            printf("\nERROR: Please validate data in row %d of input file. Invalid number of input parameters", count);
@@ -457,15 +475,10 @@ int readStudentDetails( char *filename)
         //--------------------------------------------
         // check if any of the values are null
         //--------------------------------------------
-         for( int i = 0; i < 4; i++)
-         {
-            if( strcmp( student[i], "") == 0  || strlen(student[i]) == 0) 
-            {
-               printf("\nERROR: Please validate data in row %d of input file. NULL values not allowed", count);
-               goto ERRORLOC;
-            }
-
-         }
+        if( checkforNULL( student, DETAILS_COLS, count) == ERROR)
+        {
+           goto ERRORLOC;
+        }
 
         //---------------------------------------------
         // validate input data
@@ -625,7 +638,8 @@ int dblogin()
     // this line should not be commented for test
     //--------------------------------------------
     //getlogindetails();  
-
+    	strcpy(user_name, "system");
+	strcpy(password, "or@cl321c");
     //-----------------------------------
     // login
     //-----------------------------------

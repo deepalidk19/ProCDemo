@@ -101,7 +101,7 @@ Output will be sent to stdout:  C:\Users\ProCDemo\ProCDemo.exe  C:\Users\ProCDem
 # Input validations
 1. StudentId should be numeric
 1. Each entry in Student file should have at least three parameters
-2. Year between 2020-2050
+2. Year between 2010-2050
 3. GPA between 1-4
 4. Grade between 9-12 (high school!)
 5. No validations for firstname and lastname other than strlen
